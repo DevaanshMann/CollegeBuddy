@@ -13,17 +13,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
-/**
- * AuthController
- * - POST /auth/signup : requires .edu email; creates School by domain if missing; creates User
- * - POST /auth/login  : verifies password and returns { accessToken }
- *
- * Note: Email verification is stubbed (auto-verified in dev). Replace with real
- * verification flow when Mailer + tokens are wired.
- */
 @RestController
 @RequestMapping(path = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuthController {
+
+    private static final int MAX_LEN = 255;
 
     private final UserRepository users;
     private final SchoolRepository schools;
@@ -46,19 +40,37 @@ public class AuthController {
 
     @PostMapping(value = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, String> signup(@RequestBody SignupReq r) {
-        if (r == null || r.email() == null || r.password() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email and password required");
+        if (r == null) badRequest("email and password required");
+
+        String email = safeLowerTrim(r.email());
+        String password = safeTrim(r.password());
+
+        // basic presence
+        if (email.isEmpty() || password.isEmpty()) {
+            badRequest("email and password required");
         }
 
-        String email = r.email().toLowerCase().trim();
-        if (!email.endsWith(".edu")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email must be .edu");
+        // simple format & length checks
+        if (email.length() > MAX_LEN || password.length() > MAX_LEN) {
+            badRequest("email/password too long");
         }
+        if (!email.contains("@")) {
+            badRequest("Invalid email format");
+        }
+        int at = email.indexOf('@');
+        String domain = at >= 0 && at < email.length() - 1 ? email.substring(at + 1) : "";
+        if (domain.isEmpty()) {
+            badRequest("Invalid email domain");
+        }
+        if (!email.endsWith(".edu")) {
+            badRequest("Email must be .edu");
+        }
+
         if (users.existsByEmail(email)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         }
 
-        String domain = email.substring(email.indexOf('@') + 1);
+        // upsert school by domain
         School school = schools.findByDomain(domain).orElseGet(() -> {
             School s = new School();
             s.setDomain(domain);
@@ -66,32 +78,52 @@ public class AuthController {
             return schools.save(s);
         });
 
+        // create user
         User u = new User();
         u.setEmail(email);
-        u.setPasswordHash(encoder.encode(r.password()));
+        u.setPasswordHash(encoder.encode(password));
         u.setSchool(school);
-        // For now, consider verified in dev. Replace with real email verification.
-        u.setEmailVerified(true);
+        u.setEmailVerified(true); // stubbed in dev
 
         users.save(u);
-
         return Map.of("status", "ok");
     }
 
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, String> login(@RequestBody LoginReq r) {
-        if (r == null || r.email() == null || r.password() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email and password required");
+        if (r == null) badRequest("email and password required");
+
+        String email = safeLowerTrim(r.email());
+        String password = safeTrim(r.password());
+
+        if (email.isEmpty() || password.isEmpty()) {
+            badRequest("email and password required");
+        }
+        if (email.length() > MAX_LEN || password.length() > MAX_LEN) {
+            badRequest("email/password too long");
         }
 
-        var u = users.findByEmail(r.email())
+        var u = users.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
 
-        if (!encoder.matches(r.password(), u.getPasswordHash())) {
+        if (!encoder.matches(password, u.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         String access = jwt.issueAccess(u.getId(), u.getSchool().getId());
         return Map.of("accessToken", access);
+    }
+
+    // --- helpers ---
+    private static String safeTrim(String s) {
+        return s == null ? "" : s.trim();
+    }
+
+    private static String safeLowerTrim(String s) {
+        return s == null ? "" : s.trim().toLowerCase();
+    }
+
+    private static void badRequest(String msg) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, msg);
     }
 }

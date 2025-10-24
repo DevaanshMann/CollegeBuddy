@@ -113,4 +113,40 @@ class AuthControllerTest {
                         .content("{\"email\":\"a@x.edu\",\"password\":\"bad\"}"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test void signup_nullEmail_badRequest() throws Exception {
+        mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":null,\"password\":\"p\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test void signup_blankPassword_badRequest() throws Exception {
+        mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@x.edu\",\"password\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test void signup_trimsAndLowercases_ok() throws Exception {
+        when(users.existsByEmail("alice@x.edu")).thenReturn(false);
+        when(schools.findByDomain("x.edu")).thenReturn(java.util.Optional.empty());
+        when(schools.save(any())).thenAnswer(i -> { School s=i.getArgument(0); s.setId(1L); return s; });
+        when(encoder.encode(anyString())).thenReturn("HASH");
+        when(users.save(any())).thenAnswer(i -> { User u=i.getArgument(0); u.setId(99L); return u; });
+
+        mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"  Alice@X.EDU  \",\"password\":\"p\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ok"));
+
+        verify(users).existsByEmail("alice@x.edu");
+    }
+
+    @Test void login_unknownEmail_unauthorized() throws Exception {
+        when(users.findByEmail("missing@x.edu")).thenReturn(java.util.Optional.empty());
+
+        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"missing@x.edu\",\"password\":\"p\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
 }
