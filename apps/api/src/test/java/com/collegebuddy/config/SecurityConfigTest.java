@@ -9,13 +9,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class SecurityConfigTest {
-
     @Autowired PasswordEncoder encoder;
 
-    @Test
-    void passwordEncoderBean_exists_andEncodes() {
+    @Test void passwordEncoder_exists_andEncodes() {
         assertThat(encoder).isNotNull();
-        String hash = encoder.encode("p");
-        assertThat(encoder.matches("p", hash)).isTrue();
+        assertThat(encoder.matches("p", encoder.encode("p"))).isTrue();
     }
 }
