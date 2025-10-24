@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: collegebuddy-db
+    environment:
+      POSTGRES_DB: collegebuddy
+      POSTGRES_USER: collegebuddy
+      POSTGRES_PASSWORD: collegebuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collegebuddy -d collegebuddy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: collegebuddy-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # JDBC
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/collegebuddy
+      SPRING_DATASOURCE_USERNAME: collegebuddy
+      SPRING_DATASOURCE_PASSWORD: collegebuddy
+      # JPA/Flyway
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: "true"
+      # JWT secret (use a 32+ byte string)
+      JWT_SECRET: "change-me-in-prod-32bytes-min-change-me-in-prod"
+    ports:
+      - "8080:8080"
+
+volumes:
+  dbdata:
