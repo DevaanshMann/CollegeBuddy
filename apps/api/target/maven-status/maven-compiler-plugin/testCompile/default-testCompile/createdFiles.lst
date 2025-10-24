@@ -1,0 +1,6 @@
+com/collegebuddy/util/CampusGuardTest.class
+com/collegebuddy/security/JwtAuthFilterTest.class
+com/collegebuddy/repo/UserRepositoryTest.class
+com/collegebuddy/security/JwtServiceTest.class
+com/collegebuddy/repo/SchoolRepositoryTest.class
+com/collegebuddy/controller/AuthControllerTest.class

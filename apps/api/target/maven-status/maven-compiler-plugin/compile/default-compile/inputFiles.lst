@@ -1,0 +1,13 @@
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/ApiApplication.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/CollegeBuddyApplication.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/config/SecurityConfig.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/config/WsConfig.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/controller/AuthController.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/domain/School.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/domain/User.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/repo/SchoolRepository.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/repo/UserRepository.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/security/JWTSecurity.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/security/JwtAuthFilter.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/security/JwtService.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/api/src/main/java/com/collegebuddy/util/CampusGuard.java
