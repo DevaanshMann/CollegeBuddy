@@ -4,7 +4,6 @@ com/collegebuddy/controller/AuthController$SignupReq.class
 com/collegebuddy/dto/auth/AuthResponseDto.class
 com/collegebuddy/dto/messaging/ThreadDto.class
 com/collegebuddy/dto/common/PageRequestDto.class
-com/collegebuddy/web/GlobalExceptionHandler.class
 com/collegebuddy/dto/common/PageResponseDto.class
 com/collegebuddy/dto/messaging/MessageSendRequestDto.class
 com/collegebuddy/CollegeBuddyApplication.class
@@ -12,6 +11,7 @@ com/collegebuddy/dto/common/ApiErrorDto.class
 com/collegebuddy/dto/friends/FriendSuggestionDto.class
 com/collegebuddy/exception/InvalidEmailException.class
 com/collegebuddy/dto/auth/LoginRequestDto.class
+com/collegebuddy/globalexc/GlobalExceptionHandler.class
 com/collegebuddy/dto/user/UserDetailDto.class
 com/collegebuddy/repo/SchoolRepository.class
 com/collegebuddy/exception/CredentialsInvalidException.class
@@ -21,10 +21,10 @@ com/collegebuddy/exception/DuplicateEmailException.class
 com/collegebuddy/security/JwtService.class
 com/collegebuddy/domain/School.class
 com/collegebuddy/controller/AuthController$LoginReq.class
+com/collegebuddy/globalexc/GlobalExceptionHandler$ApiError.class
 com/collegebuddy/dto/friends/FriendshipStatusDto.class
 com/collegebuddy/config/WsConfig.class
 com/collegebuddy/ApiApplication.class
-com/collegebuddy/web/GlobalExceptionHandler$ApiError.class
 com/collegebuddy/repo/UserRepository.class
 com/collegebuddy/config/SecurityConfig.class
 com/collegebuddy/dto/user/UserSummaryDto.class

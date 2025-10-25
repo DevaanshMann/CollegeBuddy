@@ -1,11 +1,14 @@
 package com.collegebuddy.security;
 
 import jakarta.servlet.FilterChain; import jakarta.servlet.ServletException;
-import org.junit.jupiter.api.*; import org.mockito.Mockito; import org.springframework.mock.web.*; import org.springframework.security.core.context.SecurityContextHolder;
+import org.junit.jupiter.api.*; import org.mockito.Mockito;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.*; import org.springframework.security.core.context.SecurityContextHolder;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SpringBootTest
 class JwtAuthFilterTest {
     JwtService jwt = new JwtService();
     JwtAuthFilter filter = new JwtAuthFilter(jwt);

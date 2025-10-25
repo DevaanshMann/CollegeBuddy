@@ -1,9 +1,11 @@
 package com.collegebuddy.util;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.server.ResponseStatusException;
 import static org.assertj.core.api.Assertions.*;
 
+@SpringBootTest
 class CampusGuardTest {
     CampusGuard guard = new CampusGuard();
     @Test void sameCampus_noException(){ guard.assertSameCampus(1L,1L); }

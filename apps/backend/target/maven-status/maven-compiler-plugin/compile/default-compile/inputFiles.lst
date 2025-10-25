@@ -24,10 +24,10 @@
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/exception/CredentialsInvalidException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/exception/DuplicateEmailException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/exception/InvalidEmailException.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/globalexc/GlobalExceptionHandler.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/repo/SchoolRepository.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/repo/UserRepository.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/JWTSecurity.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/JwtAuthFilter.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/JwtService.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/util/CampusGuard.java
-/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/web/GlobalExceptionHandler.java
