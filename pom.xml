@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>apps/api</module>
+        <module>apps/backend</module>
         <!-- add more later, e.g. <module>apps/web</module> -->
     </modules>
 </project>
