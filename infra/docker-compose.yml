@@ -7,36 +7,37 @@ services:
       POSTGRES_USER: collegebuddy
       POSTGRES_PASSWORD: collegebuddy
     ports:
-      - "5432:5432"
+      - "5432:5432"            # change left side to 5433 if host 5432 is busy
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d  # optional init scripts
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U collegebuddy -d collegebuddy"]
+      test: ["CMD-SHELL", "pg_isready -U collegebuddy -d collegebuddy -h localhost -p 5432"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
+    restart: unless-stopped
+
 
   api:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
-    container_name: collegebuddy-api
+    container_name: collegebuddy-infra
     depends_on:
       db:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # JDBC
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/collegebuddy
       SPRING_DATASOURCE_USERNAME: collegebuddy
       SPRING_DATASOURCE_PASSWORD: collegebuddy
-      # JPA/Flyway
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_FLYWAY_ENABLED: "true"
-      # JWT secret (use a 32+ byte string)
       JWT_SECRET: "change-me-in-prod-32bytes-min-change-me-in-prod"
     ports:
       - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   dbdata:

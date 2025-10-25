@@ -6,7 +6,7 @@
   </component>
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="true" />
+    <value-preview-text-wrapping value="false" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
@@ -18,6 +18,9 @@
         <conversations />
       </assistant-state>
       <assistant-state connection-id="b06cfc0f-fe76-4610-8657-4f3f56571774" default-profile-name="" selected-conversation-id="" assistant-type="GENERIC" availability="UNAVAILABLE" acknowledgement="NONE">
+        <conversations />
+      </assistant-state>
+      <assistant-state connection-id="fcde5bd8-1170-460e-b752-76dfe8492480" default-profile-name="" selected-conversation-id="" assistant-type="GENERIC" availability="UNAVAILABLE" acknowledgement="NONE">
         <conversations />
       </assistant-state>
       <assistant-state connection-id="virtual-oracle-connection" default-profile-name="" selected-conversation-id="" assistant-type="GENERIC" availability="UNAVAILABLE" acknowledgement="NONE">
@@ -38,8 +41,8 @@
     <loaded-nodes />
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
-    <connection id="b06cfc0f-fe76-4610-8657-4f3f56571774">
-      <console name="Connection" type="STANDARD" schema="postgres" session="Main" />
+    <connection id="fcde5bd8-1170-460e-b752-76dfe8492480">
+      <console name="CB_Postgres" type="STANDARD" schema="postgres" session="Main" />
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">
@@ -49,15 +52,21 @@
     <open-files />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
-    <connection id="b06cfc0f-fe76-4610-8657-4f3f56571774">
-      <session name="Session 1" id="5b3a20a9-26c8-4a3f-b266-219441055dad" />
-    </connection>
+    <connection id="fcde5bd8-1170-460e-b752-76dfe8492480" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />
   </component>
   <component name="DBNavigator.Project.FileConnectionMappingManager">
-    <mapping file-url="file://$PROJECT_DIR$/apps/api/src/main/resources/db/migration/V1__init.sql" connection-id="b06cfc0f-fe76-4610-8657-4f3f56571774" session-id="MAIN" current-schema="postgres" />
+    <mapping file-url="file://$PROJECT_DIR$/apps/backend/src/main/resources/db/V1__init.sql" connection-id="fcde5bd8-1170-460e-b752-76dfe8492480" session-id="MAIN" current-schema="postgres" />
+  </component>
+  <component name="DBNavigator.Project.MethodExecutionManager">
+    <method-browser />
+    <execution-history>
+      <group-entries value="true" />
+      <execution-inputs />
+    </execution-history>
+    <execution-variables-cache />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
@@ -68,9 +77,9 @@
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection source-id="" id="b06cfc0f-fe76-4610-8657-4f3f56571774" active="true" signed="true">
+      <connection source-id="" id="fcde5bd8-1170-460e-b752-76dfe8492480" active="true" signed="true">
         <database>
-          <name value="CB_Postgre" />
+          <name value="CB_Postgres" />
           <description value="" />
           <database-type value="POSTGRES" />
           <config-type value="BASIC" />
@@ -88,7 +97,7 @@
           <protocol value="" />
           <url-parameters />
           <type value="USER_PASSWORD" />
-          <user value="CollegeBuddy" />
+          <user value="collegebuddy" />
           <token-type value="" />
           <token-config-file value="" />
           <token-profile value="" />
