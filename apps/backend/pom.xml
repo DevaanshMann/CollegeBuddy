@@ -7,7 +7,6 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <!-- move to the latest 3.3.x patch your repo can resolve -->
         <version>3.3.4</version>
         <relativePath/>
     </parent>
@@ -19,14 +18,13 @@
 
     <properties>
         <java.version>21</java.version>
+        <flyway.version>10.19.0</flyway.version>
     </properties>
 
-    <!-- Force patched versions for CVE-noisy libs that your IDE calls out.
-         If your corporate/artifactory doesn't have these yet, drop this block or
-         adjust versions to the latest available in your repo. -->
+
     <dependencyManagement>
         <dependencies>
-            <!-- Tomcat embed (Boot manages this, but we pin to latest 10.1.x if IDE still warns) -->
+            <!-- Tomcat embed (Boot manages this; pinned here only if you want to silence IDE CVE nags) -->
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
@@ -38,7 +36,6 @@
                 <version>10.1.33</version>
             </dependency>
 
-            <!-- Logback (path traversal & janino-related issues) -->
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
@@ -50,14 +47,12 @@
                 <version>1.5.12</version>
             </dependency>
 
-            <!-- json-smart (transitive via some security libs in some setups) -->
             <dependency>
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>2.5.2</version>
             </dependency>
 
-            <!-- xmlunit-core (test scope via spring-boot-starter-test) -->
             <dependency>
                 <groupId>org.xmlunit</groupId>
                 <artifactId>xmlunit-core</artifactId>
@@ -121,6 +116,8 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+            <!-- version comes from flyway.version property above -->
+            <version>${flyway.version}</version>
         </dependency>
 
         <!-- Optional: Lombok -->
