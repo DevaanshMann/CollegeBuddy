@@ -1,4 +1,4 @@
-//package com.collegebuddy.security;
-//
-//public class JWTSecurity {
-//}
+package com.collegebuddy.security;
+
+public class JWTSecurity {
+}

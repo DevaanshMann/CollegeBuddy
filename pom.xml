@@ -13,4 +13,11 @@
         <module>apps/backend</module>
         <!-- add more later, e.g. <module>apps/web</module> -->
     </modules>
+<!--    <dependencies>-->
+<!--        <dependency>-->
+<!--            <groupId>org.example</groupId>-->
+<!--            <artifactId>CollegeBuddy</artifactId>-->
+<!--            <version>1.0-SNAPSHOT</version>-->
+<!--        </dependency>-->
+<!--    </dependencies>-->
 </project>
