@@ -4,9 +4,10 @@ import com.collegebuddy.domain.School;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -35,24 +36,7 @@ class SchoolRepositoryTest {
 
         var s2 = new School(); s2.setDomain("dup.edu"); s2.setName("Two");
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
-            schools.saveAndFlush(s2);
-        }).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> schools.saveAndFlush(s2))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
-
-    @Test
-    void duplicateDomain_violatesUniqueConstraint() {
-        var a = new com.collegebuddy.domain.School();
-        a.setDomain("dup.edu");
-        a.setName("One");
-        schools.saveAndFlush(a);
-
-        var b = new com.collegebuddy.domain.School();
-        b.setDomain("dup.edu");
-        b.setName("Two");
-
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> schools.saveAndFlush(b))
-                .isInstanceOf(Exception.class); // translated DIVE on H2
-    }
-
 }

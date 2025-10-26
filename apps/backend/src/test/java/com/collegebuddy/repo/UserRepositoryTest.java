@@ -5,9 +5,11 @@ import com.collegebuddy.domain.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -48,40 +50,21 @@ class UserRepositoryTest {
 
         var u2 = new User(); u2.setEmail("x@demo2.edu"); u2.setPasswordHash("H2"); u2.setSchool(school);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
-            users.saveAndFlush(u2);
-        }).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
-    }
-
-    @Test
-    void uniqueEmail_violatesConstraint() {
-        var s = new com.collegebuddy.domain.School();
-        s.setDomain("demo2.edu"); s.setName("Demo 2"); s = schools.saveAndFlush(s);
-
-        var u1 = new com.collegebuddy.domain.User();
-        u1.setEmail("x@demo2.edu"); u1.setPasswordHash("H"); u1.setSchool(s);
-        users.saveAndFlush(u1);
-
-        var u2 = new com.collegebuddy.domain.User();
-        u2.setEmail("x@demo2.edu"); u2.setPasswordHash("H"); u2.setSchool(s);
-
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> users.saveAndFlush(u2))
-                .isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> users.saveAndFlush(u2))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void fkViolation_nonexistentSchool_throws() {
-        var ghost = new com.collegebuddy.domain.School();
+        var ghost = new School();
         ghost.setId(999L); // not persisted
 
-        var u = new com.collegebuddy.domain.User();
+        var u = new User();
         u.setEmail("z@demo.edu");
         u.setPasswordHash("H");
         u.setSchool(ghost);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> users.saveAndFlush(u))
-                .isInstanceOf(Exception.class);
+        assertThatThrownBy(() -> users.saveAndFlush(u))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
-
-
 }

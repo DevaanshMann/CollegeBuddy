@@ -2,6 +2,7 @@ package com.collegebuddy.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,8 +30,8 @@ class JwtServiceTest {
     }
 
     @Test
-    void parse_withGarbageToken_throws() {
+    void parse_withGarbageToken_throwsJwtException() {
         assertThatThrownBy(() -> jwt.parse("not-a-jwt"))
-                .isInstanceOf(Exception.class); // signature/format error
+                .isInstanceOf(JwtException.class); // be specific per rubric
     }
 }
