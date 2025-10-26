@@ -58,7 +58,8 @@
     <retain-sticky-names value="false" />
   </component>
   <component name="DBNavigator.Project.FileConnectionMappingManager">
-    <mapping file-url="file://$PROJECT_DIR$/apps/backend/src/main/resources/db/V1__init.sql" connection-id="fcde5bd8-1170-460e-b752-76dfe8492480" session-id="MAIN" current-schema="postgres" />
+    <mapping file-url="file://$PROJECT_DIR$/apps/backend/src/main/resources/db/migration/V2__.sql" connection-id="fcde5bd8-1170-460e-b752-76dfe8492480" session-id="MAIN" current-schema="postgres" />
+    <mapping file-url="file://$APPLICATION_CONFIG_DIR$/consoles/db/b34afd8d-cd19-4ac9-9234-a473baa09c37/console.sql" connection-id="fcde5bd8-1170-460e-b752-76dfe8492480" session-id="MAIN" current-schema="postgres" />
   </component>
   <component name="DBNavigator.Project.MethodExecutionManager">
     <method-browser />
@@ -83,7 +84,7 @@
           <description value="" />
           <database-type value="POSTGRES" />
           <config-type value="BASIC" />
-          <database-version value="9999.0" />
+          <database-version value="16.1" />
           <driver-source value="BUNDLED" />
           <driver-library value="" />
           <driver value="" />
@@ -101,7 +102,7 @@
           <token-type value="" />
           <token-config-file value="" />
           <token-profile value="" />
-          <session-user value="" />
+          <session-user value="collegebuddy" />
         </database>
         <properties>
           <auto-commit value="false" />

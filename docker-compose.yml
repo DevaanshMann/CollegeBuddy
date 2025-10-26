@@ -1,3 +1,5 @@
+name: collegebuddy
+
 services:
   db:
     image: postgres:16-alpine
@@ -7,10 +9,10 @@ services:
       POSTGRES_USER: collegebuddy
       POSTGRES_PASSWORD: collegebuddy
     ports:
-      - "5432:5432"            # change left side to 5433 if host 5432 is busy
+      - "5432:5432"                # If busy on host, change to "5433:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
-      - ./docker/init:/docker-entrypoint-initdb.d  # optional init scripts
+      - ./docker/init:/docker-entrypoint-initdb.d   # optional .sql/.sh on first run
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U collegebuddy -d collegebuddy -h localhost -p 5432"]
       interval: 5s
@@ -18,12 +20,11 @@ services:
       retries: 20
     restart: unless-stopped
 
-
   api:
     build:
-      context: ./apps/api
+      context: ./apps/backend       # <-- this folder must contain Dockerfile + pom.xml + src/
       dockerfile: Dockerfile
-    container_name: collegebuddy-infra
+    container_name: collegebuddy-api
     depends_on:
       db:
         condition: service_healthy
