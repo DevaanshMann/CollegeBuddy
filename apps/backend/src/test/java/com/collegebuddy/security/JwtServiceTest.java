@@ -1,38 +1,3 @@
-//package com.collegebuddy.security;
-//
-//import io.jsonwebtoken.Claims;
-//import io.jsonwebtoken.Jws;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//
-//import static org.assertj.core.api.Assertions.*;
-//
-//class JwtServiceTest {
-//
-//    private JwtService jwt;
-//
-//    @BeforeEach
-//    void setUp() {
-//        jwt = new JwtService();
-//    }
-//
-//    @Test
-//    void issueAccess_includesSubjectAndSchoolIdClaim() {
-//        String token = jwt.issueAccess(42L, 7L);
-//        Jws<Claims> parsed = jwt.parse(token);
-//
-//        assertThat(parsed.getBody().getSubject()).isEqualTo("42");
-//        assertThat(parsed.getBody().get("sid", Object.class)).isEqualTo(7);
-//        assertThat(parsed.getBody().getExpiration()).isAfter(new java.util.Date());
-//    }
-//
-//    @Test
-//    void parse_withGarbageToken_throws() {
-//        assertThatThrownBy(() -> jwt.parse("not-a-jwt"))
-//                .isInstanceOf(Exception.class); // signature/format error
-//    }
-//}
-
 package com.collegebuddy.security;
 
 import io.jsonwebtoken.Claims;
@@ -52,10 +17,6 @@ class JwtServiceTest {
     // >= 32 bytes (HS256 requirement)
     private static final String TEST_SECRET = "0123456789_0123456789_0123456789_012345";
 
-    // ----------------------------------------------------------------------
-    // issueAccess_and_parse_roundTrip_claimsAreCorrect
-    // ----------------------------------------------------------------------
-
     @Test
     void issueAccess_and_parse_roundTrip_claimsAreCorrect() {
         JwtService jwt = new JwtService(TEST_SECRET);
@@ -70,25 +31,21 @@ class JwtServiceTest {
         Jws<Claims> jws = jwt.parse(token);
         Claims c = jws.getBody();
 
-        // issuer, subject, sid
         assertThat(c.getIssuer()).isEqualTo("collegebuddy");
         assertThat(c.getSubject()).isEqualTo(Long.toString(userId));
 
         Number sid = c.get("sid", Number.class);
         assertThat(sid.longValue()).isEqualTo(schoolId);
 
-        // iat between before/after; exp ~ 15 minutes after iat
         Date iat = c.getIssuedAt();
         Date exp = c.getExpiration();
 
         assertThat(iat.toInstant()).isBetween(before.minusSeconds(1), after.plusSeconds(1));
 
         long diffSeconds = ChronoUnit.SECONDS.between(iat.toInstant(), exp.toInstant());
-        // allow small timing jitter
         assertThat(diffSeconds).isBetween(14 * 60L, 16 * 60L);
     }
 
-    // +1: Large ID values still round-trip correctly
     @Test
     void issueAccess_roundTrip_withLargeIds() {
         JwtService jwt = new JwtService(TEST_SECRET);
@@ -104,7 +61,6 @@ class JwtServiceTest {
         assertThat(sid.longValue()).isEqualTo(schoolId);
     }
 
-    // +2: Expiration window sanity (looser bounds to avoid flakiness)
     @Test
     void issueAccess_expirationWindow_isAbout15Minutes() {
         JwtService jwt = new JwtService(TEST_SECRET);
@@ -118,10 +74,6 @@ class JwtServiceTest {
         assertThat(diffSeconds).isBetween(14 * 60L, 16 * 60L);
     }
 
-    // ----------------------------------------------------------------------
-    // parse_withDifferentKey_failsVerification
-    // ----------------------------------------------------------------------
-
     @Test
     void parse_withDifferentKey_failsVerification() {
         JwtService jwtA = new JwtService(TEST_SECRET);
@@ -132,7 +84,6 @@ class JwtServiceTest {
         assertThrows(JwtException.class, () -> jwtB.parse(tokenFromA));
     }
 
-    // +1: Same key should succeed (sanity check)
     @Test
     void parse_withSameKey_succeeds() {
         JwtService jwt = new JwtService(TEST_SECRET);
@@ -144,7 +95,6 @@ class JwtServiceTest {
         assertThat(sid.longValue()).isEqualTo(22L);
     }
 
-    // +2: Key with same length but different bytes must fail verification
     @Test
     void parse_withRotatedKey_failsVerification() {
         // Same length as TEST_SECRET but shifted one char
@@ -155,10 +105,6 @@ class JwtServiceTest {
         String tokenFromA = jwtA.issueAccess(3L, 4L);
         assertThrows(JwtException.class, () -> jwtB.parse(tokenFromA));
     }
-
-    // ----------------------------------------------------------------------
-    // parse_withTamperedToken_throws
-    // ----------------------------------------------------------------------
 
     @Test
     void parse_withTamperedToken_throws() {
@@ -171,7 +117,6 @@ class JwtServiceTest {
         assertThrows(JwtException.class, () -> jwt.parse(tampered));
     }
 
-    // +1: Tamper the header (change first character) -> should throw
     @Test
     void parse_withHeaderTampered_throws() {
         JwtService jwt = new JwtService(TEST_SECRET);
@@ -185,15 +130,13 @@ class JwtServiceTest {
         assertThrows(JwtException.class, () -> jwt.parse(tampered));
     }
 
-    // +2: Tamper payload segment (still base64-decodable but signature invalid) -> throw
     @Test
     void parse_withPayloadTampered_throws() {
         JwtService jwt = new JwtService(TEST_SECRET);
         String token = jwt.issueAccess(99L, 88L);
 
-        // JWT is header.payload.signature; split on '.'
         String[] parts = token.split("\\.");
-        // mutate one char in the payload (middle) safely
+
         String payload = parts[1];
         char ch = payload.charAt(0);
         char alt = (ch == 'A') ? 'B' : 'A';
@@ -203,16 +146,11 @@ class JwtServiceTest {
         assertThrows(JwtException.class, () -> jwt.parse(tampered));
     }
 
-    // ----------------------------------------------------------------------
-    // constructor_rejectsTooShortSecret
-    // ----------------------------------------------------------------------
-
     @Test
     void constructor_rejectsTooShortSecret() {
         assertThrows(IllegalArgumentException.class, () -> new JwtService("too-short-secret"));
     }
 
-    // +1: Exactly 31 bytes should fail; exactly 32 should succeed
     @Test
     void constructor_edgeLengths() {
         String thirtyOne = "1234567890123456789012345678901"; // 31
@@ -222,11 +160,10 @@ class JwtServiceTest {
 
         JwtService ok = new JwtService(thirtyTwo);
         String token = ok.issueAccess(1L, 1L);
-        // parses fine
+
         assertThat(ok.parse(token)).isNotNull();
     }
 
-    // +2: Very long secret should still work
     @Test
     void constructor_veryLongSecret_works() {
         String longSecret = "x".repeat(256);
@@ -234,10 +171,6 @@ class JwtServiceTest {
         String token = jwt.issueAccess(5L, 6L);
         assertThat(jwt.parse(token)).isNotNull();
     }
-
-    // ----------------------------------------------------------------------
-    // noArgConstructor_producesUsableService
-    // ----------------------------------------------------------------------
 
     @Test
     void noArgConstructor_producesUsableService() {
@@ -251,7 +184,6 @@ class JwtServiceTest {
         assertThat(sid.longValue()).isEqualTo(8L);
     }
 
-    // +1: Multiple tokens from no-arg ctor have distinct subjects as issued
     @Test
     void noArgConstructor_multipleTokens_distinctSubjects() {
         JwtService jwt = new JwtService();
@@ -263,7 +195,6 @@ class JwtServiceTest {
         assertThat(jwt.parse(t2).getBody().getSubject()).isEqualTo("202");
     }
 
-    // +2: Issuer and sid type consistency with default secret
     @Test
     void noArgConstructor_issuerAndSid_consistency() {
         JwtService jwt = new JwtService();

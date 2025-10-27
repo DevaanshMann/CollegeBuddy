@@ -1,47 +1,3 @@
-//package com.collegebuddy.repo;
-//
-//import com.collegebuddy.domain.School;
-//import com.collegebuddy.domain.User;
-//import org.junit.jupiter.api.Test;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-//import org.springframework.test.context.ActiveProfiles;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//
-//@DataJpaTest
-//@ActiveProfiles("test")
-//class UserRepositoryTest {
-//
-//    private final UserRepository users;
-//    private final SchoolRepository schools;
-//
-//    UserRepositoryTest(@Autowired UserRepository users,
-//                       @Autowired SchoolRepository schools) {
-//        this.users = users;
-//        this.schools = schools;
-//    }
-//
-//    @Test
-//    void existsByEmail_and_findByEmail_work() {
-//        var school = new School();
-//        school.setDomain("demo.edu");
-//        school.setName("Demo U");
-//        school = schools.save(school);
-//
-//        var u = new User();
-//        u.setEmail("x@demo.edu");
-//        u.setPasswordHash("H");
-//        u.setSchool(school);
-//        users.save(u);
-//
-//        assertThat(users.existsByEmail("x@demo.edu")).isTrue();
-//        assertThat(users.findByEmail("x@demo.edu")).isPresent();
-//        assertThat(users.findByEmail("y@demo.edu")).isEmpty();
-//    }
-//}
-
-
 package com.collegebuddy.repo;
 
 import com.collegebuddy.domain.School;
@@ -95,8 +51,6 @@ class UserRepositoryTest {
         return u;
     }
 
-    // ---------------- existsByEmail ----------------
-
     @Test
     void existsByEmail_trueAfterPersist() {
         em.persistAndFlush(newUser("alice@cpp.edu", "H1"));
@@ -108,21 +62,17 @@ class UserRepositoryTest {
         assertThat(users.existsByEmail("nobody@cpp.edu")).isFalse();
     }
 
-    // ADDED #1 for existsByEmail: mixed-case should not match
     @Test
     void existsByEmail_mixedCaseQuery_doesNotMatchStoredLowercase() {
         em.persistAndFlush(newUser("bob@cpp.edu", "Hb"));
         assertThat(users.existsByEmail("BOB@CPP.EDU")).isFalse();
     }
 
-    // ADDED #2 for existsByEmail: whitespace should not match
     @Test
     void existsByEmail_withLeadingTrailingSpaces_returnsFalse() {
         em.persistAndFlush(newUser("cara@cpp.edu", "Hc"));
         assertThat(users.existsByEmail("  cara@cpp.edu ")).isFalse();
     }
-
-    // ---------------- findByEmail ----------------
 
     @Test
     void findByEmail_returnsUserWhenPresent() {
@@ -142,7 +92,6 @@ class UserRepositoryTest {
         assertThat(users.findByEmail("ghost@cpp.edu")).isEmpty();
     }
 
-    // ADDED #1 for findByEmail: returns the correct user among many
     @Test
     void findByEmail_returnsCorrectUserAmongMany() {
         em.persist(newUser("u1@cpp.edu", "H1"));
@@ -156,7 +105,6 @@ class UserRepositoryTest {
         assertThat(found.get().getEmail()).isEqualTo("target@cpp.edu");
     }
 
-    // ADDED #2 for findByEmail: after updating email, old not found; new found
     @Test
     void findByEmail_afterEmailUpdate_oldEmailNotFound_newEmailFound() {
         User u = em.persistFlushFind(newUser("old@cpp.edu", "H0"));
@@ -169,8 +117,6 @@ class UserRepositoryTest {
         assertThat(found.get().getId()).isEqualTo(u.getId());
     }
 
-    // ---------------- save & update round-trip ----------------
-
     @Test
     void save_update_roundTrip() {
         User u = em.persistFlushFind(newUser("carol@cpp.edu", "H3"));
@@ -180,8 +126,6 @@ class UserRepositoryTest {
         User reloaded = em.find(User.class, u.getId());
         assertThat(reloaded.getPasswordHash()).isEqualTo("H3-new");
     }
-
-    // ---------------- paging/sorting helpers ----------------
 
     @Test
     void pagingAndSorting_byEmail() {
@@ -199,20 +143,15 @@ class UserRepositoryTest {
         assertThat(page1.getContent()).isNotEmpty();
     }
 
-    // ---------------- exact-match behavior ----------------
-
     @Test
     void findByEmail_isExactMatch_notTrimmedOrCaseFolded() {
         em.persistAndFlush(newUser("casey@cpp.edu", "Hc"));
 
-        // Leading/trailing whitespace won't match unless normalized
         assertThat(users.findByEmail(" casey@cpp.edu ")).isEmpty();
 
-        // Different case won't match in most H2/Hibernate defaults (depends on collation)
         assertThat(users.findByEmail("CASEY@CPP.EDU")).isEmpty();
     }
 
-    // Optional: enable only if "email" is unique in schema (e.g., @Column(unique = true))
      @Test
      void save_duplicateEmail_violatesUniqueConstraint() {
          em.persistAndFlush(newUser("unique@cpp.edu", "Hx"));

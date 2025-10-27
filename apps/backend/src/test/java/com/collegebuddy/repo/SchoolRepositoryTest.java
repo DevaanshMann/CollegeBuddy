@@ -1,36 +1,3 @@
-//package com.collegebuddy.repo;
-//
-//import com.collegebuddy.domain.School;
-//import org.junit.jupiter.api.Test;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-//import org.springframework.test.context.ActiveProfiles;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//
-//@DataJpaTest
-//@ActiveProfiles("test")
-//class SchoolRepositoryTest {
-//
-//    private final SchoolRepository schools;
-//
-//    SchoolRepositoryTest(@Autowired SchoolRepository schools) {
-//        this.schools = schools;
-//    }
-//
-//    @Test
-//    void findByDomain_returnsSavedSchool() {
-//        var s = new School();
-//        s.setDomain("abc.edu");
-//        s.setName("ABC University");
-//        schools.save(s);
-//
-//        assertThat(schools.findByDomain("abc.edu")).isPresent();
-//        assertThat(schools.findByDomain("none.edu")).isEmpty();
-//    }
-//}
-
-
 package com.collegebuddy.repo;
 
 import com.collegebuddy.domain.School;
@@ -83,10 +50,6 @@ class SchoolRepositoryTest {
         repo.saveAndFlush(sdsu);
     }
 
-    // ---------------------------------------------------------------------
-    // findByDomain — present
-    // ---------------------------------------------------------------------
-
     @Test
     void findByDomain_returnsMatchWhenPresent() {
         Optional<School> found = repo.findByDomain("csun.edu");
@@ -97,7 +60,6 @@ class SchoolRepositoryTest {
 
     @Test
     void findByDomain_present_caseMustMatch_exactOnly() {
-        // same domain in upper-case should not match unless ignoring case
         assertThat(repo.findByDomain("CSUN.EDU")).isEmpty();
     }
 
@@ -105,10 +67,6 @@ class SchoolRepositoryTest {
     void findByDomain_present_trimmedQueryDoesNotMatch() {
         assertThat(repo.findByDomain(" csun.edu ")).isEmpty();
     }
-
-    // ---------------------------------------------------------------------
-    // findByDomain — absent
-    // ---------------------------------------------------------------------
 
     @Test
     void findByDomain_returnsEmptyWhenAbsent() {
@@ -124,10 +82,6 @@ class SchoolRepositoryTest {
     void findByDomain_emptyStringDoesNotMatch() {
         assertThat(repo.findByDomain("")).isEmpty();
     }
-
-    // ---------------------------------------------------------------------
-    // save / persist basics
-    // ---------------------------------------------------------------------
 
     @Test
     void save_persistsAndAssignsId() {
@@ -170,10 +124,6 @@ class SchoolRepositoryTest {
         assertThat(repo.findByDomain("ucsb.edu")).isPresent();
     }
 
-    // ---------------------------------------------------------------------
-    // update round-trip
-    // ---------------------------------------------------------------------
-
     @Test
     void update_roundTripPersistsChanges() {
         School loaded = repo.findByDomain("cpp.edu").orElseThrow();
@@ -206,10 +156,6 @@ class SchoolRepositoryTest {
                 .isEqualTo("CSU Northridge");
     }
 
-    // ---------------------------------------------------------------------
-    // delete variants
-    // ---------------------------------------------------------------------
-
     @Test
     void delete_removesEntity() {
         Long id = csun.getId();
@@ -237,10 +183,6 @@ class SchoolRepositoryTest {
         assertThat(repo.count()).isZero();
     }
 
-    // ---------------------------------------------------------------------
-    // sorting
-    // ---------------------------------------------------------------------
-
     @Test
     void findAll_withSortingByDomainAscending() {
         List<School> sorted = repo.findAll(Sort.by(Sort.Direction.ASC, "domain"));
@@ -258,7 +200,6 @@ class SchoolRepositoryTest {
     @Test
     void findAll_withSortingByNameAscending() {
         List<School> sorted = repo.findAll(Sort.by(Sort.Direction.ASC, "name"));
-        // Alphabetically: Cal Poly Pomona, California State University, Northridge, San Diego State University
         assertThat(sorted).extracting(School::getName)
                 .containsExactly(
                         "Cal Poly Pomona",
@@ -266,10 +207,6 @@ class SchoolRepositoryTest {
                         "San Diego State University"
                 );
     }
-
-    // ---------------------------------------------------------------------
-    // paging
-    // ---------------------------------------------------------------------
 
     @Test
     void findAll_withPaging_returnsCorrectSlice() {
@@ -302,13 +239,8 @@ class SchoolRepositoryTest {
         assertThat(p2.getContent()).extracting(School::getDomain).containsExactly("sdsu.edu");
     }
 
-    // ---------------------------------------------------------------------
-    // exact-match behavior
-    // ---------------------------------------------------------------------
-
     @Test
     void findByDomain_isExactMatch_notTrimmedOrCaseFolded() {
-        // saved as lowercase without spaces
         assertThat(repo.findByDomain(" csun.edu ")).isEmpty();
         assertThat(repo.findByDomain("CSUN.EDU")).isEmpty();
     }
@@ -320,16 +252,14 @@ class SchoolRepositoryTest {
 
     @Test
     void findByDomain_savedWithWhitespace_onlyMatchesExact() {
-        // Save a record that actually includes spaces in the domain field (discouraged, but tests exactness)
+
         School odd = new School();
         odd.setName("Odd School");
         odd.setDomain(" odd.edu ");
         repo.saveAndFlush(odd);
 
-        // Exact query (with spaces) matches
         assertThat(repo.findByDomain(" odd.edu ")).isPresent();
 
-        // Trimmed query does NOT match
         assertThat(repo.findByDomain("odd.edu")).isEmpty();
     }
 }
