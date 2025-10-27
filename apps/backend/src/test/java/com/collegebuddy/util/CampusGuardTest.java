@@ -19,7 +19,6 @@ class CampusGuardTest {
 
     @Test
     void bothNull_allows() {
-        // Mirrors current behavior of Objects.equals(null, null) == true
         assertDoesNotThrow(() -> guard.assertSameCampus(null, null));
     }
 

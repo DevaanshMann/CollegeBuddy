@@ -13,14 +13,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
-/**
- * AuthController
- * - POST /auth/signup : requires .edu email; creates School by domain if missing; creates User
- * - POST /auth/login  : verifies password and returns { accessToken }
- *
- * Note: Email verification is stubbed (auto-verified in dev). Replace with real
- * verification flow when Mailer + tokens are wired.
- */
 @RestController
 @RequestMapping(path = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuthController {
@@ -40,7 +32,6 @@ public class AuthController {
         this.jwt = jwt;
     }
 
-    // --- DTOs ---
     public record SignupReq(String email, String password) {}
     public record LoginReq(String email, String password) {}
 
@@ -70,7 +61,6 @@ public class AuthController {
         u.setEmail(email);
         u.setPasswordHash(encoder.encode(r.password()));
         u.setSchool(school);
-        // For now, consider verified in dev. Replace with real email verification.
         u.setEmailVerified(true);
 
         users.save(u);

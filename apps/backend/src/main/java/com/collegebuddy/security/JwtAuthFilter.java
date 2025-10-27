@@ -15,14 +15,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Reads the Authorization: Bearer <JWT> header, validates it via JwtService,
- * and places an Authentication into the SecurityContext.
- *
- * Principal:   userId (String)
- * Authorities: none (empty list)
- * Request attr: "schoolId" (Long) — convenient to access campus scoping.
- */
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwt;
@@ -50,11 +42,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Jws<Claims> jws = jwt.parse(token);
                 Claims claims = jws.getBody();
 
-                String userId = claims.getSubject();                 // our principal
-                Object sidObj = claims.get("sid");                   // campus/school id
+                String userId = claims.getSubject();
+                Object sidObj = claims.get("sid");
                 Long schoolId = sidObj instanceof Number ? ((Number) sidObj).longValue() : null;
 
-                // Store schoolId on the request for easy access in controllers
                 if (schoolId != null) {
                     request.setAttribute("schoolId", schoolId);
                 }
@@ -64,8 +55,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (Exception ignored) {
-                // Invalid token: leave context unauthenticated and continue
-                // (Security rules will block protected endpoints)
+
             }
         }
 

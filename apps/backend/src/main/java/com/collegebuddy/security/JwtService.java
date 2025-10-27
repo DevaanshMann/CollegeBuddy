@@ -21,17 +21,11 @@ public class JwtService {
 
     private final Key key;
 
-    /**
-     * Primary ctor used by Spring. Reads JWT secret from env/property.
-     */
+
     public JwtService(@Value("${JWT_SECRET:change-me-in-dev-change-me-in-dev}") String secret) {
         this.key = buildKey(secret);
     }
 
-    /**
-     * Convenience ctor for tests that call "new JwtService()".
-     * Delegates to the main ctor with the default.
-     */
     public JwtService() {
         this("change-me-in-dev-change-me-in-dev");
     }
@@ -43,7 +37,7 @@ public class JwtService {
                     "JWT secret must be at least " + MIN_SECRET_BYTES + " bytes for HS256");
         }
         return Keys.hmacShaKeyFor(bytes);
-        // (Keeping it as a field is correct; we need the same key for issue/parse.)
+
     }
 
     public String issueAccess(Long userId, Long schoolId) {
