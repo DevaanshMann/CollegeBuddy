@@ -1,4 +1,4 @@
 package com.collegebuddy.repo;
 
-public class SchoolRepository {
+public class ProfileRepository {
 }

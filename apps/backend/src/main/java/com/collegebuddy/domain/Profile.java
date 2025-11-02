@@ -1,4 +1,4 @@
 package com.collegebuddy.domain;
 
-public class User {
+public class Profile {
 }

@@ -1,4 +1,4 @@
 package com.collegebuddy.config;
 
-public class SecurityConfig {
+public class WebSocketConfig {
 }
