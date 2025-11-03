@@ -1,4 +1,8 @@
 package com.collegebuddy.dto;
 
-public class ProfileResponse {
-}
+public record ProfileResponse(
+        String displayName,
+        String bio,
+        String avatarUrl,
+        String visibility
+) {}

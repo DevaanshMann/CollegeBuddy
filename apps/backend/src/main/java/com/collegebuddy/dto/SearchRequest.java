@@ -1,4 +1,5 @@
 package com.collegebuddy.dto;
 
-public class SearchRequest {
-}
+public record SearchRequest(
+        String query
+) {}

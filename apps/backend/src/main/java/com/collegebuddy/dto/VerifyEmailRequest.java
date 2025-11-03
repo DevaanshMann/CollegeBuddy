@@ -1,4 +1,5 @@
 package com.collegebuddy.dto;
 
-public class VerifyEmailRequest {
-}
+public record VerifyEmailRequest(
+        String token
+) {}

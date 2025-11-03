@@ -1,4 +1,8 @@
 package com.collegebuddy.dto;
 
-public class MessageDto {
-}
+public record MessageDto(
+        Long fromUserId,
+        Long toUserId,
+        String content,
+        long timestamp
+) {}

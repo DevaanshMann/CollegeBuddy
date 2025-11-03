@@ -1,4 +1,8 @@
 package com.collegebuddy.repo;
 
-public class ProfileRepository {
+import com.collegebuddy.domain.Profile;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ProfileRepository extends JpaRepository<Profile, Long> {
+    // userId is the PK
 }

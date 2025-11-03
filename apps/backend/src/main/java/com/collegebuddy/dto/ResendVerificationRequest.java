@@ -1,4 +1,5 @@
 package com.collegebuddy.dto;
 
-public class ResendVerificationRequest {
-}
+public record ResendVerificationRequest(
+        String email
+) {}

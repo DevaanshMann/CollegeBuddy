@@ -1,4 +1,6 @@
 package com.collegebuddy.dto;
 
-public class SendMessageRequest {
-}
+public record SendMessageRequest(
+        Long toUserId,
+        String content
+) {}

@@ -1,4 +1,7 @@
 package com.collegebuddy.dto;
 
-public class SignupRequest {
-}
+public record SignupRequest(
+        String email,
+        String password,
+        String campusDomain
+) {}

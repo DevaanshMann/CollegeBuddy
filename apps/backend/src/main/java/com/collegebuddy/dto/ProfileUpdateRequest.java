@@ -1,4 +1,8 @@
 package com.collegebuddy.dto;
 
-public class ProfileUpdateRequest {
-}
+public record ProfileUpdateRequest(
+        String displayName,
+        String bio,
+        String avatarUrl,
+        String visibility // "PUBLIC" / "PRIVATE"
+) {}

@@ -1,4 +1,5 @@
 package com.collegebuddy.dto;
 
-public class ConnectionStatusDto {
-}
+public record ConnectionStatusDto(
+        String status // "PENDING", "ACCEPTED", "DECLINED"
+) {}

@@ -1,4 +1,6 @@
 package com.collegebuddy.dto;
 
-public class RespondToConnectionDto {
-}
+public record RespondToConnectionDto(
+        Long requestId,
+        String action // "ACCEPT", "DECLINE"
+) {}

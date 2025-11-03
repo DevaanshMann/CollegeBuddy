@@ -1,4 +1,6 @@
 package com.collegebuddy.dto;
 
-public class SendConnectionRequestDto {
-}
+public record SendConnectionRequestDto(
+        Long fromUserId,
+        Long toUserId
+) {}
