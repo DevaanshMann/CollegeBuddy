@@ -1,33 +1,71 @@
 package com.collegebuddy.security;
 
+import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
+import com.collegebuddy.common.exceptions.UnauthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-
-/*
-    Runs on every request;
-    - reads Authorization header
-    - validates JWT
-    - Checks campus domain claim
-    - sets security context or rejects
- */
+import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+
     public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
-//        TODO: extract token, validate, maybe ser auth in SecurityContextHolder
-        filterChain.doFilter(request,response);
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain)
+            throws ServletException, IOException {
+
+        String header = request.getHeader("Authorization");
+
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring("Bearer ".length()).trim();
+
+            if (!jwtService.validateToken(token)) {
+                // bad/expired token
+                throw new UnauthorizedException("Invalid or expired JWT");
+            }
+
+            Long userId = jwtService.extractUserId(token);
+            String campusDomain = jwtService.extractCampusDomain(token);
+
+            // basic check: block requests without campusDomain (campus-only wall)
+            if (campusDomain == null || campusDomain.isBlank()) {
+                throw new ForbiddenCampusAccessException("Campus domain missing or invalid");
+            }
+
+            // Build a minimal Authentication and stuff it in the context.
+            AbstractAuthenticationToken auth =
+                    new AbstractAuthenticationToken(List.of(new SimpleGrantedAuthority("ROLE_USER"))) {
+                        @Override
+                        public Object getCredentials() {
+                            return token;
+                        }
+
+                        @Override
+                        public Object getPrincipal() {
+                            return userId;
+                        }
+                    };
+            auth.setAuthenticated(true);
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+
+        chain.doFilter(request, response);
     }
 }

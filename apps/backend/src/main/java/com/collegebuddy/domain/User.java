@@ -1,15 +1,9 @@
 package com.collegebuddy.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "users")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class User {
 
     @Id
@@ -23,13 +17,66 @@ public class User {
     private String hashedPassword;
 
     @Column(nullable = false, length = 255)
-    private String campusDomain; // e.g. "csun.edu"
+    private String campusDomain;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 64)
-    private AccountStatus status; // PENDING_VERIFICATION / ACTIVE / DEACTIVATED
+    private AccountStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 64)
-    private Role role; // STUDENT / ADMIN
+    private Role role;
+
+    public User() {
+    }
+
+    // getters & setters
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getHashedPassword() {
+        return hashedPassword;
+    }
+
+    public void setHashedPassword(String hashedPassword) {
+        this.hashedPassword = hashedPassword;
+    }
+
+    public String getCampusDomain() {
+        return campusDomain;
+    }
+
+    public void setCampusDomain(String campusDomain) {
+        this.campusDomain = campusDomain;
+    }
+
+    public AccountStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AccountStatus status) {
+        this.status = status;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
 }

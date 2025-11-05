@@ -4,42 +4,40 @@ import com.collegebuddy.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/*
-    Handles signup, login, email verification, resend verification
- */
-
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
     private final AuthService authService;
     private final TokenService tokenService;
 
-    public AuthController(AuthService authService, TokenService tokenService) {
+    public AuthController(AuthService authService,
+                          TokenService tokenService) {
         this.authService = authService;
         this.tokenService = tokenService;
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request){
-//        TODO: creating pending user, send verification email
-        return ResponseEntity.ok(new AuthResponse("Pending", null));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request){
-//        TODO: Validate credentials, issue JWT
-        return ResponseEntity.ok(new AuthResponse("Ok", "stub.jwt.token"));
+    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request) {
+        AuthResponse resp = authService.signup(request);
+        return ResponseEntity.ok(resp);
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<Void> verifyEmail(@RequestBody VerifyEmailRequest request){
-//        TODO: validate token and activate account
+    public ResponseEntity<Void> verifyEmail(@RequestBody VerifyEmailRequest request) {
+        authService.verifyEmail(request);
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        AuthResponse resp = authService.login(request);
+        return ResponseEntity.ok(resp);
+    }
+
     @PostMapping("/resend")
-    public ResponseEntity<Void> resendVerification(@RequestBody ResendVerificationRequest request){
-//        TODO: resend verification link
+    public ResponseEntity<Void> resend(@RequestBody ResendVerificationRequest request) {
+        authService.resendVerification(request);
         return ResponseEntity.ok().build();
     }
 }

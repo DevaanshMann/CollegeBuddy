@@ -3,17 +3,68 @@ package com.collegebuddy.config;
 import com.collegebuddy.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-/*
-Security configuration: HTTP security, filter chain, session, etc.
- */
 @Configuration
 public class SecurityConfig {
 
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
     @Bean
-    public SecurityFilterChain securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
-//             TODO: configure scrf, authorizeHttpRequests, sessionCreationpolicy, etc.
+    public PasswordEncoder passwordEncoder() {
+        // BCrypt is standard for hashing user passwords in Spring Security
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration)
+            throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        // Public endpoints (signup/login/verify/resend)
+        RequestMatcher publicEndpoints = new OrRequestMatcher(
+                new AntPathRequestMatcher("/auth/signup"),
+                new AntPathRequestMatcher("/auth/login"),
+                new AntPathRequestMatcher("/auth/verify"),
+                new AntPathRequestMatcher("/auth/resend")
+        );
+
+        http
+                // This is an API, no browser session/state
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sess ->
+                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers(publicEndpoints).permitAll()
+                        .anyRequest().authenticated()
+                )
+                // We’re not using form login/basic auth
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(form -> form.disable());
+
+        // Add our JWT filter before Spring’s UsernamePasswordAuthenticationFilter
+        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
