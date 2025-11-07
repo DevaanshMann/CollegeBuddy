@@ -48,6 +48,7 @@ com/collegebuddy/profile/ProfileService.class
 com/collegebuddy/gateway/RateLimitingFilter.class
 com/collegebuddy/domain/Conversation.class
 com/collegebuddy/dto/UserDto.class
+com/collegebuddy/security/AuthenticatedUser.class
 com/collegebuddy/security/JwtAuthFilter.class
 com/collegebuddy/auth/TokenService.class
 com/collegebuddy/repo/ConnectionRequestRepository.class
@@ -63,6 +64,7 @@ com/collegebuddy/dto/LoginRequest.class
 com/collegebuddy/dto/VerifyEmailRequest.class
 com/collegebuddy/dto/ConnectionStatusDto.class
 com/collegebuddy/dto/ProfileUpdateRequest.class
+com/collegebuddy/security/SecurityUtils.class
 com/collegebuddy/config/SecurityConfig.class
 com/collegebuddy/search/SearchController.class
 com/collegebuddy/domain/User.class

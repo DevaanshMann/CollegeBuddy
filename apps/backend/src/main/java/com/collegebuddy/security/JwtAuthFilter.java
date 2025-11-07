@@ -36,19 +36,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring("Bearer ".length()).trim();
 
             if (!jwtService.validateToken(token)) {
-                // bad/expired token
                 throw new UnauthorizedException("Invalid or expired JWT");
             }
 
             Long userId = jwtService.extractUserId(token);
             String campusDomain = jwtService.extractCampusDomain(token);
 
-            // basic check: block requests without campusDomain (campus-only wall)
             if (campusDomain == null || campusDomain.isBlank()) {
                 throw new ForbiddenCampusAccessException("Campus domain missing or invalid");
             }
 
-            // Build a minimal Authentication and stuff it in the context.
+            AuthenticatedUser principal = new AuthenticatedUser(userId, campusDomain);
+
             AbstractAuthenticationToken auth =
                     new AbstractAuthenticationToken(List.of(new SimpleGrantedAuthority("ROLE_USER"))) {
                         @Override
@@ -58,7 +57,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                         @Override
                         public Object getPrincipal() {
-                            return userId;
+                            return principal;
                         }
                     };
             auth.setAuthenticated(true);

@@ -1,15 +1,9 @@
 package com.collegebuddy.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "profiles")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Profile {
 
     @Id
@@ -26,5 +20,50 @@ public class Profile {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private Visibility visibility; // PUBLIC / PRIVATE
+    private Visibility visibility;
+
+    public Profile() {
+    }
+
+    // getters & setters
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public Visibility getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(Visibility visibility) {
+        this.visibility = visibility;
+    }
 }

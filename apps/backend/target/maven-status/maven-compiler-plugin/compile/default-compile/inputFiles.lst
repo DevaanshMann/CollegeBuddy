@@ -65,5 +65,7 @@
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/search/IndexService.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/search/SearchController.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/search/SearchService.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/AuthenticatedUser.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/JwtAuthFilter.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/JwtService.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/security/SecurityUtils.java
