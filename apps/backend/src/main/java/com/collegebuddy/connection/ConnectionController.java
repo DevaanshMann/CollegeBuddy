@@ -3,12 +3,11 @@ package com.collegebuddy.connection;
 import com.collegebuddy.dto.ConnectionStatusDto;
 import com.collegebuddy.dto.RespondToConnectionDto;
 import com.collegebuddy.dto.SendConnectionRequestDto;
+import com.collegebuddy.security.AuthenticatedUser;
+import com.collegebuddy.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Sending/accepting/declining connection requests.
- */
 @RestController
 @RequestMapping("/connections")
 public class ConnectionController {
@@ -20,14 +19,23 @@ public class ConnectionController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity<ConnectionStatusDto> sendRequest(@RequestBody SendConnectionRequestDto request) {
-        // TODO: create PENDING request
-        return ResponseEntity.ok(new ConnectionStatusDto("PENDING"));
+    public ResponseEntity<Void> requestConnection(@RequestBody SendConnectionRequestDto dto) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        connectionService.sendConnectionRequest(current.id(), current.campusDomain(), dto);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/respond")
-    public ResponseEntity<ConnectionStatusDto> respond(@RequestBody RespondToConnectionDto request) {
-        // TODO: accept/decline
-        return ResponseEntity.ok(new ConnectionStatusDto("ACCEPTED"));
+    public ResponseEntity<Void> respond(@RequestBody RespondToConnectionDto dto) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        connectionService.respondToConnectionRequest(current.id(), dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<ConnectionStatusDto> listConnections() {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        ConnectionStatusDto status = connectionService.getConnectionStatus(current.id());
+        return ResponseEntity.ok(status);
     }
 }

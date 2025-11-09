@@ -1,5 +1,9 @@
 package com.collegebuddy.dto;
 
+import java.util.List;
+
 public record ConnectionStatusDto(
-        String status // "PENDING", "ACCEPTED", "DECLINED"
+        List<UserDto> connections,
+        List<UserDto> incomingRequests,
+        List<UserDto> outgoingRequests
 ) {}

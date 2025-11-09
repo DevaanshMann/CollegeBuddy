@@ -4,9 +4,12 @@
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/auth/TokenService.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/ErrorHandler.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/AlreadyConnectedException.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/ConnectionAlreadyExistsException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/ConnectionNotFoundException.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/ConnectionRequestNotFoundException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/EmailAlreadyInUseException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/ForbiddenCampusAccessException.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/InvalidConnectionActionException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/InvalidEmailDomainException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/InvalidVerificationTokenException.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/common/exceptions/MessagingNotAllowedException.java

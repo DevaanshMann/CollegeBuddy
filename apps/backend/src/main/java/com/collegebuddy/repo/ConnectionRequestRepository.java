@@ -1,10 +1,16 @@
 package com.collegebuddy.repo;
 
 import com.collegebuddy.domain.ConnectionRequest;
+import com.collegebuddy.domain.ConnectionRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface ConnectionRequestRepository extends JpaRepository<ConnectionRequest, Long> {
-    Optional<ConnectionRequest> findByFromUserIdAndToUserId(Long fromUserId, Long toUserId);
+
+    boolean existsByFromUserIdAndToUserIdAndStatus(Long fromUserId, Long toUserId, ConnectionRequestStatus status);
+
+    List<ConnectionRequest> findByToUserIdAndStatus(Long toUserId, ConnectionRequestStatus status);
+
+    List<ConnectionRequest> findByFromUserIdAndStatus(Long fromUserId, ConnectionRequestStatus status);
 }

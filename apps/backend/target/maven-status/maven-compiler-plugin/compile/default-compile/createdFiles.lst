@@ -16,6 +16,7 @@ com/collegebuddy/common/exceptions/ConnectionNotFoundException.class
 com/collegebuddy/dto/SignupRequest.class
 com/collegebuddy/common/exceptions/UnauthorizedException.class
 com/collegebuddy/security/JwtService.class
+com/collegebuddy/common/exceptions/ConnectionRequestNotFoundException.class
 com/collegebuddy/common/exceptions/InvalidEmailDomainException.class
 com/collegebuddy/dto/ProfileResponse.class
 com/collegebuddy/search/IndexService.class
@@ -34,6 +35,7 @@ com/collegebuddy/dto/SearchRequest.class
 com/collegebuddy/domain/Connection.class
 com/collegebuddy/config/WebSocketConfig.class
 com/collegebuddy/security/JwtAuthFilter$1.class
+com/collegebuddy/common/exceptions/InvalidConnectionActionException.class
 com/collegebuddy/notification/NotificationService.class
 com/collegebuddy/repo/MessageRepository.class
 com/collegebuddy/domain/Role.class
@@ -53,6 +55,7 @@ com/collegebuddy/security/JwtAuthFilter.class
 com/collegebuddy/auth/TokenService.class
 com/collegebuddy/repo/ConnectionRequestRepository.class
 com/collegebuddy/domain/School.class
+com/collegebuddy/common/exceptions/ConnectionAlreadyExistsException.class
 com/collegebuddy/connection/ConnectionController.class
 com/collegebuddy/connection/ConnectionService.class
 com/collegebuddy/gateway/RequestLoggingFilter.class

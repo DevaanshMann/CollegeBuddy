@@ -1,9 +1,8 @@
 package com.collegebuddy.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 
 @Entity
 @Table(
@@ -13,9 +12,6 @@ import lombok.NoArgsConstructor;
                 columnNames = {"from_user_id", "to_user_id"}
         )
 )
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ConnectionRequest {
 
     @Id
@@ -28,7 +24,33 @@ public class ConnectionRequest {
     @Column(name = "to_user_id", nullable = false)
     private Long toUserId;
 
+    @Column(length = 500)
+    private String message;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private ConnectionRequestStatus status; // PENDING / ACCEPTED / DECLINED
+    private ConnectionRequestStatus status;
+
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    public ConnectionRequest() {}
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getFromUserId() { return fromUserId; }
+    public void setFromUserId(Long fromUserId) { this.fromUserId = fromUserId; }
+
+    public Long getToUserId() { return toUserId; }
+    public void setToUserId(Long toUserId) { this.toUserId = toUserId; }
+
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
+
+    public ConnectionRequestStatus getStatus() { return status; }
+    public void setStatus(ConnectionRequestStatus status) { this.status = status; }
+
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
