@@ -1,14 +1,13 @@
 package com.collegebuddy.messaging;
 
-import com.collegebuddy.dto.ConversationDto;
+import com.collegebuddy.dto.ConversationResponse;
 import com.collegebuddy.dto.MessageDto;
 import com.collegebuddy.dto.SendMessageRequest;
+import com.collegebuddy.security.AuthenticatedUser;
+import com.collegebuddy.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 1:1 messaging between connected users.
- */
 @RestController
 @RequestMapping("/messages")
 public class MessagingController {
@@ -20,14 +19,20 @@ public class MessagingController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<MessageDto> sendMessage(@RequestBody SendMessageRequest request) {
-        // TODO: ensure users are connected, persist message, deliver
-        return ResponseEntity.ok(new MessageDto(1L, 2L, "hello", System.currentTimeMillis()));
+    public ResponseEntity<MessageDto> send(@RequestBody SendMessageRequest request) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        MessageDto msg = messagingService.sendMessage(current.id(), current.campusDomain(), request);
+        return ResponseEntity.ok(msg);
     }
 
     @GetMapping("/conversation/{otherUserId}")
-    public ResponseEntity<ConversationDto> getConversation(@PathVariable Long otherUserId) {
-        // TODO: load conversation between auth user + otherUserId
-        return ResponseEntity.ok(new ConversationDto());
+    public ResponseEntity<ConversationResponse> getConversation(@PathVariable Long otherUserId) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        ConversationResponse resp = messagingService.getConversation(
+                current.id(),
+                current.campusDomain(),
+                otherUserId
+        );
+        return ResponseEntity.ok(resp);
     }
 }

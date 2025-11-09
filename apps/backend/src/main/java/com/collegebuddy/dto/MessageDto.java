@@ -1,8 +1,10 @@
 package com.collegebuddy.dto;
 
+import java.time.Instant;
+
 public record MessageDto(
-        Long fromUserId,
-        Long toUserId,
-        String content,
-        long timestamp
+        Long id,
+        Long senderId,
+        String body,
+        Instant sentAt
 ) {}

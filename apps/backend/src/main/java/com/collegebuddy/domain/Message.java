@@ -1,35 +1,43 @@
 package com.collegebuddy.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "messages")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Message {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // which conversation this message belongs to
-    @Column(nullable = false)
+    @Column(name = "conversation_id", nullable = false)
     private Long conversationId;
 
-    // who sent it
-    @Column(nullable = false)
-    private Long senderUserId;
+    @Column(name = "sender_id", nullable = false)
+    private Long senderId;
 
-    @Lob
-    @Column(nullable = false)
-    private String content;
+    @Column(nullable = false, length = 2000)
+    private String body;
 
     @Column(nullable = false)
     private Instant sentAt;
+
+    public Message() {}
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getConversationId() { return conversationId; }
+    public void setConversationId(Long conversationId) { this.conversationId = conversationId; }
+
+    public Long getSenderId() { return senderId; }
+    public void setSenderId(Long senderId) { this.senderId = senderId; }
+
+    public String getBody() { return body; }
+    public void setBody(String body) { this.body = body; }
+
+    public Instant getSentAt() { return sentAt; }
+    public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
 }
