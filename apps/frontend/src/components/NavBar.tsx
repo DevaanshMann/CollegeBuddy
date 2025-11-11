@@ -1,14 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { JWT_STORAGE_KEY } from "../config";
 
 export function NavBar() {
+    const location = useLocation();
     const navigate = useNavigate();
-    const isLoggedIn = !!localStorage.getItem(JWT_STORAGE_KEY);
+    const token = localStorage.getItem(JWT_STORAGE_KEY);
 
-    function handleLogout() {
+    const onLogout = () => {
         localStorage.removeItem(JWT_STORAGE_KEY);
         navigate("/login");
-    }
+    };
+
+    const isActive = (path: string) =>
+        location.pathname === path ? { textDecoration: "underline" } : {};
 
     return (
         <nav
@@ -16,28 +20,38 @@ export function NavBar() {
                 display: "flex",
                 alignItems: "center",
                 gap: "1rem",
-                padding: "0.75rem 1rem",
-                borderBottom: "1px solid #ddd",
+                borderBottom: "1px solid #374151",
+                paddingBottom: "0.75rem",
             }}
         >
-            <span style={{ fontWeight: "bold" }}>CollegeBuddy</span>
+            <span style={{ fontWeight: 700, fontSize: "1.2rem" }}>CollegeBuddy</span>
 
-            <Link to="/signup">Sign Up</Link>
-            <Link to="/login">Login</Link>
+            <Link to="/signup" style={isActive("/signup")}>
+                Sign Up
+            </Link>
+            <Link to="/login" style={isActive("/login")}>
+                Login
+            </Link>
 
-            {isLoggedIn && (
+            {token && (
                 <>
-                    <Link to="/profile">Profile</Link>
-                    <Link to="/search">Search</Link>
-                    <Link to="/connections">Connections</Link>
+                    <Link to="/profile" style={isActive("/profile")}>
+                        Profile
+                    </Link>
+                    <Link to="/search" style={isActive("/search")}>
+                        Search
+                    </Link>
+                    <Link to="/connections" style={isActive("/connections")}>
+                        Connections
+                    </Link>
+                    <button
+                        onClick={onLogout}
+                        style={{ marginLeft: "auto", background: "transparent", border: "none", color: "#f97316", cursor: "pointer" }}
+                    >
+                        Logout
+                    </button>
                 </>
             )}
-
-            <div style={{ marginLeft: "auto" }}>
-                {isLoggedIn && (
-                    <button onClick={handleLogout}>Logout</button>
-                )}
-            </div>
         </nav>
     );
 }

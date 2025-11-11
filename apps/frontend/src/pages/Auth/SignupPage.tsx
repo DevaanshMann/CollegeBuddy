@@ -29,9 +29,11 @@ export function SignupPage() {
                 `Signup status: ${res.status}. Check backend logs for verification token.`
             );
         } catch (err: any) {
+            console.error("Signup error:", err);
             setError(err.message ?? "Signup failed");
         }
     }
+
 
     return (
         <div>
