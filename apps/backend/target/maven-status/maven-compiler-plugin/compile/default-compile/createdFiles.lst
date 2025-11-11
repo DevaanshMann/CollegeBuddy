@@ -20,6 +20,7 @@ com/collegebuddy/common/exceptions/ConnectionRequestNotFoundException.class
 com/collegebuddy/common/exceptions/InvalidEmailDomainException.class
 com/collegebuddy/dto/ProfileResponse.class
 com/collegebuddy/search/IndexService.class
+com/collegebuddy/common/exceptions/MessagePermissionException.class
 com/collegebuddy/messaging/MessagingController.class
 com/collegebuddy/dto/ConversationDto.class
 com/collegebuddy/search/SearchService.class
@@ -36,6 +37,7 @@ com/collegebuddy/domain/Connection.class
 com/collegebuddy/config/WebSocketConfig.class
 com/collegebuddy/security/JwtAuthFilter$1.class
 com/collegebuddy/common/exceptions/InvalidConnectionActionException.class
+com/collegebuddy/dto/ConversationResponse.class
 com/collegebuddy/notification/NotificationService.class
 com/collegebuddy/repo/MessageRepository.class
 com/collegebuddy/domain/Role.class
