@@ -52,9 +52,9 @@ public class SecurityConfig {
         );
 
         http
-                // 🔹 Let Spring use our CorsConfigurationSource bean
-                .cors(Customizer.withDefaults())
+                // This is an API, no browser session/state
                 .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults())              // 👈 enable our CorsConfigurationSource
                 .sessionManagement(sess ->
                         sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -62,19 +62,23 @@ public class SecurityConfig {
                         .requestMatchers(publicEndpoints).permitAll()
                         .anyRequest().authenticated()
                 )
+                // We’re not using form login/basic auth
                 .httpBasic(Customizer.withDefaults())
                 .formLogin(form -> form.disable());
+
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(java.util.List.of("http://localhost:5173")); // frontend dev
+        config.setAllowedOrigins(java.util.List.of(
+                "http://localhost:5173",
+                "http://localhost:5174"
+        ));
         config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(java.util.List.of("*"));
         config.setAllowCredentials(true);
@@ -83,5 +87,6 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
 
 }

@@ -1,159 +1,202 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../api/client";
-import { Link } from "react-router-dom";
 
-type ConnectionSummary = {
+type Friend = {
     userId: number;
-    displayName: string | null;
-    avatarUrl: string | null;
+    displayName: string;
+    avatarUrl?: string;
 };
 
-type ConnectionRequestSummary = {
-    requestId: number;
-    fromUserId: number;
-    toUserId: number;
-    fromDisplayName: string | null;
-    toDisplayName: string | null;
-    status: "PENDING" | "ACCEPTED" | "DECLINED";
+type RequestItem = {
+    id: number;
+    fromUser: Friend;
+    toUser: Friend;
 };
 
 type ConnectionsResponse = {
-    connections: ConnectionSummary[];
-    incomingRequests: ConnectionRequestSummary[];
-    outgoingRequests: ConnectionRequestSummary[];
+    connections: Friend[];
+    incomingRequests: RequestItem[];
+    outgoingRequests: RequestItem[];
 };
 
 export function ConnectionsPage() {
-    const [data, setData] = useState<ConnectionsResponse | null>(null);
+    const [data, setData] = useState<ConnectionsResponse>({
+        connections: [],
+        incomingRequests: [],
+        outgoingRequests: [],
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
+    const [status, setStatus] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        async function loadConnections() {
-            try {
-                const res = await apiClient.get<ConnectionsResponse>("/connections");
-                setData(res);
-            } catch (err: any) {
-                setError(err.message ?? "Failed to load connections");
-            } finally {
-                setLoading(false);
-            }
-        }
-
         void loadConnections();
     }, []);
 
-    async function respondToRequest(requestId: number, action: "ACCEPT" | "DECLINE") {
+    async function loadConnections() {
+        setLoading(true);
         setError(null);
-        setMessage(null);
-        try {
-            await apiClient.post("/connections/respond", { requestId, action });
-            setMessage(`Request ${action.toLowerCase()}ed`);
+        setStatus(null);
 
-            // reload list
-            const res = await apiClient.get<ConnectionsResponse>("/connections");
-            setData(res);
+        try {
+            const res = await apiClient.get<any>("/connections");
+            setData({
+                connections: res.connections ?? [],
+                incomingRequests: res.incomingRequests ?? [],
+                outgoingRequests: res.outgoingRequests ?? [],
+            });
         } catch (err: any) {
-            setError(err.message ?? "Failed to respond to request");
+            console.error("Load connections error:", err);
+            setError(err.message ?? "Failed to load connections");
+        } finally {
+            setLoading(false);
         }
     }
 
-    if (loading) return <p>Loading connections...</p>;
+    async function postAndRefresh(path: string, okMessage: string) {
+        setError(null);
+        setStatus(null);
+        try {
+            await apiClient.post(path);
+            setStatus(okMessage);
+            await loadConnections();
+        } catch (err: any) {
+            console.error("Connections action error:", err);
+            setError(err.message ?? "Action failed");
+        }
+    }
 
-    if (!data) return <p>No connection data.</p>;
+    if (loading && !data) {
+        return <p>Loading connections...</p>;
+    }
 
     return (
         <div>
             <h2>Your Connections</h2>
 
-            {message && <p style={{ color: "green" }}>{message}</p>}
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
+                Friends can message you directly. Incoming and outgoing requests let you manage who
+                you connect with.
+            </p>
 
-            <section style={{ marginBottom: "1rem" }}>
+            {status && <p style={{ color: "#22c55e", marginBottom: "0.75rem" }}>{status}</p>}
+            {error && <p style={{ color: "red", marginBottom: "0.75rem" }}>{error}</p>}
+
+            {/* Friends */}
+            <section style={{ marginBottom: "1.5rem" }}>
                 <h3>Friends</h3>
-                {data.connections.length === 0 && <p>No connections yet.</p>}
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                    {data.connections.map((c) => (
-                        <li
-                            key={c.userId}
-                            style={{
-                                border: "1px solid #ddd",
-                                borderRadius: 8,
-                                padding: "0.5rem",
-                                marginBottom: "0.5rem",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.75rem",
-                            }}
-                        >
-                            {c.avatarUrl && (
-                                <img
-                                    src={c.avatarUrl}
-                                    alt={c.displayName ?? "avatar"}
-                                    style={{ width: 32, height: 32, borderRadius: "50%" }}
-                                />
-                            )}
-                            <span style={{ flex: 1 }}>
-                {c.displayName ?? `User #${c.userId}`}
-              </span>
-                            <Link to={`/chat/${c.userId}`}>Open Chat</Link>
-                        </li>
-                    ))}
-                </ul>
+                <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                    Once someone accepts your request, they’ll appear here. Click “Message” to open a
+                    chat.
+                </p>
+                {data.connections.length === 0 ? (
+                    <p>No connections yet.</p>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        {data.connections.map((f) => (
+                            <div
+                                key={f.userId}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0.6rem 0.75rem",
+                                    borderRadius: "0.5rem",
+                                    border: "1px solid #374151",
+                                }}
+                            >
+                                <div>{f.displayName}</div>
+                                <button onClick={() => navigate(`/chat/${f.userId}`)}>Message</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
-            <section style={{ marginBottom: "1rem" }}>
+            {/* Incoming */}
+            <section style={{ marginBottom: "1.5rem" }}>
                 <h3>Incoming Requests</h3>
-                {data.incomingRequests.length === 0 && <p>No incoming requests.</p>}
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                    {data.incomingRequests.map((r) => (
-                        <li
-                            key={r.requestId}
-                            style={{
-                                border: "1px solid #ddd",
-                                borderRadius: 8,
-                                padding: "0.5rem",
-                                marginBottom: "0.5rem",
-                            }}
-                        >
-                            <div>
-                                From: {r.fromDisplayName ?? `User #${r.fromUserId}`} (
-                                {r.status})
+                <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                    Classmates who want to connect with you. Accept to become friends, or decline.
+                </p>
+                {data.incomingRequests.length === 0 ? (
+                    <p>No incoming requests.</p>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        {data.incomingRequests.map((r) => (
+                            <div
+                                key={r.id}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0.6rem 0.75rem",
+                                    borderRadius: "0.5rem",
+                                    border: "1px solid #374151",
+                                }}
+                            >
+                                <div>{r.fromUser?.displayName ?? "Unknown user"}</div>
+                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                    <button
+                                        onClick={() =>
+                                            postAndRefresh(`/connections/${r.id}/accept`, "Connection accepted")
+                                        }
+                                    >
+                                        Accept
+                                    </button>
+                                    <button
+                                        onClick={() =>
+                                            postAndRefresh(
+                                                `/connections/${r.id}/decline`,
+                                                "Request declined"
+                                            )
+                                        }
+                                    >
+                                        Decline
+                                    </button>
+                                </div>
                             </div>
-                            <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem" }}>
-                                <button onClick={() => respondToRequest(r.requestId, "ACCEPT")}>
-                                    Accept
-                                </button>
-                                <button onClick={() => respondToRequest(r.requestId, "DECLINE")}>
-                                    Decline
-                                </button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                        ))}
+                    </div>
+                )}
             </section>
 
+            {/* Outgoing */}
             <section>
                 <h3>Outgoing Requests</h3>
-                {data.outgoingRequests.length === 0 && <p>No outgoing requests.</p>}
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                    {data.outgoingRequests.map((r) => (
-                        <li
-                            key={r.requestId}
-                            style={{
-                                border: "1px solid #ddd",
-                                borderRadius: 8,
-                                padding: "0.5rem",
-                                marginBottom: "0.5rem",
-                            }}
-                        >
-                            <div>
-                                To: {r.toDisplayName ?? `User #${r.toUserId}`} ({r.status})
+                <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                    Requests you’ve sent. You can cancel them if you change your mind.
+                </p>
+                {data.outgoingRequests.length === 0 ? (
+                    <p>No outgoing requests.</p>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        {data.outgoingRequests.map((r) => (
+                            <div
+                                key={r.id}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0.6rem 0.75rem",
+                                    borderRadius: "0.5rem",
+                                    border: "1px solid #374151",
+                                }}
+                            >
+                                <div>{r.toUser?.displayName ?? "Unknown user"}</div>
+                                <button
+                                    onClick={() =>
+                                        postAndRefresh(`/connections/${r.id}/cancel`, "Request cancelled")
+                                    }
+                                >
+                                    Cancel
+                                </button>
                             </div>
-                        </li>
-                    ))}
-                </ul>
+                        ))}
+                    </div>
+                )}
             </section>
         </div>
     );

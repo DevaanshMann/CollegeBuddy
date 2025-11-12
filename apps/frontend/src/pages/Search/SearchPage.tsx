@@ -1,118 +1,129 @@
-import type { FormEvent } from "react";
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { apiClient } from "../../api/client";
 
 type SearchResult = {
     userId: number;
-    displayName: string | null;
-    avatarUrl: string | null;
-    visibility: "PUBLIC" | "CAMPUS_ONLY" | "PRIVATE";
+    displayName: string;
+    avatarUrl?: string;
+    visibility?: string;
 };
-
-type SearchResponse = SearchResult[];
 
 export function SearchPage() {
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<SearchResponse>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState<string | null>(null);
+    const [status, setStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     async function handleSearch(e: FormEvent) {
         e.preventDefault();
+        if (!query.trim()) return;
+
         setLoading(true);
-        setMessage(null);
+        setStatus(null);
         setError(null);
 
         try {
-            const res = await apiClient.post<SearchResponse>("/search", { query });
-            setResults(res);
-            if (res.length === 0) {
-                setMessage("No classmates found.");
+            const raw = await apiClient.get<any>(
+                `/search?query=${encodeURIComponent(query.trim())}`
+            );
+            const list: SearchResult[] = Array.isArray(raw)
+                ? raw
+                : (raw?.results ?? []);
+            setResults(list);
+            if (list.length === 0) {
+                setStatus(`No classmates found for "${query.trim()}".`);
             }
         } catch (err: any) {
+            console.error("Search error:", err);
             setError(err.message ?? "Search failed");
         } finally {
             setLoading(false);
         }
     }
 
-    async function sendRequest(userId: number) {
+    async function handleConnect(userId: number) {
         setError(null);
-        setMessage(null);
+        setStatus(null);
+
         try {
             await apiClient.post("/connections/request", {
                 toUserId: userId,
-                message: "Hey, let’s connect!",
+                message: "Hey, let's connect!",
             });
-            setMessage("Connection request sent.");
+            setStatus("Connection request sent!");
         } catch (err: any) {
-            setError(err.message ?? "Failed to send connection request");
+            console.error("Send request error:", err);
+            setError(err.message ?? "Failed to send request");
         }
     }
 
     return (
         <div>
             <h2>Search Classmates</h2>
+            <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
+                Search only shows students with profiles from your campus (.edu domain).
+            </p>
 
             <form
                 onSubmit={handleSearch}
-                style={{
-                    maxWidth: 400,
-                    display: "flex",
-                    gap: "0.5rem",
-                    marginBottom: "1rem",
-                }}
+                style={{ display: "flex", gap: "0.5rem", maxWidth: 480, marginBottom: "1.25rem" }}
             >
                 <input
                     type="text"
                     placeholder="Search by name or username"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    required
-                    style={{ flex: 1 }}
                 />
                 <button type="submit" disabled={loading}>
                     {loading ? "Searching..." : "Search"}
                 </button>
             </form>
 
-            {message && <p style={{ color: "green" }}>{message}</p>}
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            {status && <p style={{ color: "#9ca3af", marginBottom: "0.75rem" }}>{status}</p>}
+            {error && <p style={{ color: "red", marginBottom: "0.75rem" }}>{error}</p>}
 
-            <ul style={{ listStyle: "none", padding: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                 {results.map((r) => (
-                    <li
+                    <div
                         key={r.userId}
                         style={{
-                            border: "1px solid #ddd",
-                            borderRadius: 8,
-                            padding: "0.75rem",
-                            marginBottom: "0.5rem",
                             display: "flex",
                             alignItems: "center",
-                            gap: "0.75rem",
+                            justifyContent: "space-between",
+                            padding: "0.6rem 0.75rem",
+                            borderRadius: "0.5rem",
+                            border: "1px solid #374151",
                         }}
                     >
-                        {r.avatarUrl && (
-                            <img
-                                src={r.avatarUrl}
-                                alt={r.displayName ?? "avatar"}
-                                style={{ width: 40, height: 40, borderRadius: "50%" }}
-                            />
-                        )}
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: "bold" }}>
-                                {r.displayName ?? "(no name yet)"}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            <div
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "999px",
+                                    backgroundColor: "#1f2937",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    fontSize: 14,
+                                }}
+                            >
+                                {r.displayName?.charAt(0).toUpperCase() ?? "?"}
                             </div>
-                            <div style={{ fontSize: "0.85rem", color: "#555" }}>
-                                Visibility: {r.visibility}
+                            <div>
+                                <div>{r.displayName}</div>
+                                {r.visibility && (
+                                    <div style={{ fontSize: 12, color: "#9ca3af" }}>{r.visibility}</div>
+                                )}
                             </div>
                         </div>
-                        <button onClick={() => sendRequest(r.userId)}>Connect</button>
-                    </li>
+
+                        <button onClick={() => handleConnect(r.userId)}>Connect</button>
+                    </div>
                 ))}
-            </ul>
+            </div>
         </div>
     );
 }

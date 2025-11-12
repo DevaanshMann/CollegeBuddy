@@ -5,6 +5,7 @@ export function NavBar() {
     const location = useLocation();
     const navigate = useNavigate();
     const token = localStorage.getItem(JWT_STORAGE_KEY);
+    const isAuthed = Boolean(token);
 
     const onLogout = () => {
         localStorage.removeItem(JWT_STORAGE_KEY);
@@ -26,14 +27,18 @@ export function NavBar() {
         >
             <span style={{ fontWeight: 700, fontSize: "1.2rem" }}>CollegeBuddy</span>
 
-            <Link to="/signup" style={isActive("/signup")}>
-                Sign Up
-            </Link>
-            <Link to="/login" style={isActive("/login")}>
-                Login
-            </Link>
+            {!isAuthed && (
+                <>
+                    <Link to="/signup" style={isActive("/signup")}>
+                        Sign Up
+                    </Link>
+                    <Link to="/login" style={isActive("/login")}>
+                        Login
+                    </Link>
+                </>
+            )}
 
-            {token && (
+            {isAuthed && (
                 <>
                     <Link to="/profile" style={isActive("/profile")}>
                         Profile
@@ -44,9 +49,16 @@ export function NavBar() {
                     <Link to="/connections" style={isActive("/connections")}>
                         Connections
                     </Link>
+
                     <button
                         onClick={onLogout}
-                        style={{ marginLeft: "auto", background: "transparent", border: "none", color: "#f97316", cursor: "pointer" }}
+                        style={{
+                            marginLeft: "auto",
+                            background: "transparent",
+                            border: "none",
+                            color: "#f97316",
+                            cursor: "pointer",
+                        }}
                     >
                         Logout
                     </button>

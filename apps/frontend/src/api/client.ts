@@ -1,17 +1,14 @@
 import { API_BASE_URL, JWT_STORAGE_KEY } from "../config";
 
 async function request<T>(
+    method: "GET" | "POST" | "PUT" | "DELETE",
     path: string,
-    options: RequestInit = {}
+    body?: unknown
 ): Promise<T> {
     const token = localStorage.getItem(JWT_STORAGE_KEY);
 
-    const baseHeaders = options.headers ?? {};
-
-    // Use a plain record so we can index with ["Authorization"]
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        ...(baseHeaders as Record<string, string>),
     };
 
     if (token) {
@@ -19,36 +16,39 @@ async function request<T>(
     }
 
     const res = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
+        method,
         headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
     if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Request failed with status ${res.status}`);
+        const text = await res.text().catch(() => "");
+        // 401/403 etc bubble up as readable errors
+        throw new Error(
+            `Request failed with status ${res.status}${
+                text ? `: ${text}` : ""
+            }`
+        );
     }
 
+    // No content
     if (res.status === 204) {
-        return {} as T;
+        // @ts-expect-error
+        return null;
     }
 
-    return (await res.json()) as T;
+    const text = await res.text();
+    if (!text) {
+        // @ts-expect-error
+        return null;
+    }
+
+    return JSON.parse(text) as T;
 }
 
 export const apiClient = {
-    get<T>(path: string) {
-        return request<T>(path);
-    },
-    post<T>(path: string, body?: unknown) {
-        return request<T>(path, {
-            method: "POST",
-            body: body ? JSON.stringify(body) : undefined,
-        });
-    },
-    put<T>(path: string, body?: unknown) {
-        return request<T>(path, {
-            method: "PUT",
-            body: body ? JSON.stringify(body) : undefined,
-        });
-    },
+    get: <T>(path: string) => request<T>("GET", path),
+    post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+    put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
+    delete: <T>(path: string) => request<T>("DELETE", path),
 };
