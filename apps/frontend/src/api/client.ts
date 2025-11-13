@@ -1,3 +1,4 @@
+// src/api/client.ts
 import { API_BASE_URL, JWT_STORAGE_KEY } from "../config";
 
 async function request<T>(
@@ -23,32 +24,23 @@ async function request<T>(
 
     if (!res.ok) {
         const text = await res.text().catch(() => "");
-        // 401/403 etc bubble up as readable errors
         throw new Error(
-            `Request failed with status ${res.status}${
-                text ? `: ${text}` : ""
-            }`
+            `Request failed with status ${res.status}${text ? `: ${text}` : ""}`
         );
     }
 
-    // No content
+    // Assuming all responses are JSON for now
     if (res.status === 204) {
-        // @ts-expect-error
-        return null;
+        // no content
+        return undefined as T;
     }
 
-    const text = await res.text();
-    if (!text) {
-        // @ts-expect-error
-        return null;
-    }
-
-    return JSON.parse(text) as T;
+    return (await res.json()) as T;
 }
 
 export const apiClient = {
     get: <T>(path: string) => request<T>("GET", path),
     post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
-    put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
-    delete: <T>(path: string) => request<T>("DELETE", path),
+    put:  <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
+    del:  <T>(path: string) => request<T>("DELETE", path),
 };

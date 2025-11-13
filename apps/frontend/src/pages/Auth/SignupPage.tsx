@@ -10,7 +10,7 @@ type SignupResponse = {
 export function SignupPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [campusDomain, setCampusDomain] = useState("csun.edu");
+    const [campusDomain, setCampusDomain] = useState("");
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
