@@ -79,9 +79,10 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:5174"
         ));
-        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(java.util.List.of("*"));
         config.setAllowCredentials(true);
+        config.setExposedHeaders(java.util.List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

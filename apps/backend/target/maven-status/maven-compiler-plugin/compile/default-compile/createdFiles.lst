@@ -31,6 +31,7 @@ com/collegebuddy/email/EmailService.class
 com/collegebuddy/repo/UserRepository.class
 com/collegebuddy/common/exceptions/EmailAlreadyInUseException.class
 com/collegebuddy/auth/AuthService.class
+com/collegebuddy/config/WebConfig.class
 com/collegebuddy/messaging/MessagingService.class
 com/collegebuddy/dto/SearchRequest.class
 com/collegebuddy/domain/Connection.class
