@@ -358,26 +358,6 @@ export function ProfilePage() {
                         </span>
                         </p>
                     </div>
-
-                    {/* Debug info - remove this later */}
-                    {avatarUrl && (
-                        <details style={{ marginTop: "1rem", fontSize: "0.8rem", color: "#666" }}>
-                            <summary style={{ cursor: "pointer" }}>Debug Info (click to expand)</summary>
-                            <pre style={{
-                                backgroundColor: "#f0f0f0",
-                                padding: "0.5rem",
-                                borderRadius: "4px",
-                                overflow: "auto",
-                                marginTop: "0.5rem"
-                            }}>
-                            {JSON.stringify({
-                                "Raw avatarUrl": profile.avatarUrl,
-                                "Full avatarUrl": avatarUrl,
-                                "API_BASE_URL": API_BASE_URL
-                            }, null, 2)}
-                        </pre>
-                        </details>
-                    )}
                 </div>
             </div>
         );
