@@ -60,14 +60,15 @@ export function ChatPage() {
         setError(null);
 
         try {
+            // Fixed: Use recipientId instead of toUserId
             await apiClient.post("/messages/send", {
-                toUserId: otherIdNum,
+                recipientId: otherIdNum,
                 body: newMessage.trim(),
             });
 
             setNewMessage("");
 
-            // Reload conversation (simple approach for now)
+            // Reload conversation
             const res = await apiClient.get<ConversationResponse>(
                 `/messages/conversation/${otherUserId}`
             );
@@ -96,9 +97,10 @@ export function ChatPage() {
                     maxHeight: 400,
                     overflowY: "auto",
                     marginBottom: "0.75rem",
+                    backgroundColor: "#f9f9f9",
                 }}
             >
-                {conversation.messages.length === 0 && <p>No messages yet.</p>}
+                {conversation.messages.length === 0 && <p>No messages yet. Start the conversation!</p>}
                 {conversation.messages.map((m) => (
                     <div
                         key={m.id}
@@ -112,11 +114,11 @@ export function ChatPage() {
                                 display: "inline-block",
                                 padding: "0.4rem 0.6rem",
                                 borderRadius: 8,
-                                background: "#f3f3f3",
+                                background: "#e3f2fd",
                             }}
                         >
                             <div style={{ fontSize: "0.8rem", color: "#555" }}>
-                                From #{m.senderId}
+                                From user #{m.senderId}
                             </div>
                             <div>{m.body}</div>
                             <div style={{ fontSize: "0.7rem", color: "#888" }}>
@@ -136,7 +138,7 @@ export function ChatPage() {
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, padding: "0.5rem" }}
                 />
                 <button type="submit" disabled={sending}>
                     {sending ? "Sending..." : "Send"}

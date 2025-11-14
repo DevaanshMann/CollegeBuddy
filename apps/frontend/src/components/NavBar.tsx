@@ -1,19 +1,24 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { JWT_STORAGE_KEY } from "../config";
+import { useEffect, useState } from "react";
 
 export function NavBar() {
     const location = useLocation();
-    const navigate = useNavigate();
-    const token = localStorage.getItem(JWT_STORAGE_KEY);
-    const isAuthed = Boolean(token);
+    const [isAuthed, setIsAuthed] = useState(Boolean(localStorage.getItem(JWT_STORAGE_KEY)));
+
+    // Update auth state when location changes
+    useEffect(() => {
+        setIsAuthed(Boolean(localStorage.getItem(JWT_STORAGE_KEY)));
+    }, [location]);
 
     const onLogout = () => {
         localStorage.removeItem(JWT_STORAGE_KEY);
-        navigate("/login");
+        setIsAuthed(false);
+        window.location.href = "/login";
     };
 
     const isActive = (path: string) =>
-        location.pathname === path ? { textDecoration: "underline" } : {};
+        location.pathname === path ? { textDecoration: "underline", fontWeight: "bold" } : {};
 
     return (
         <nav
@@ -23,6 +28,7 @@ export function NavBar() {
                 gap: "1rem",
                 borderBottom: "1px solid #374151",
                 paddingBottom: "0.75rem",
+                marginBottom: "1rem",
             }}
         >
             <span style={{ fontWeight: 700, fontSize: "1.2rem" }}>CollegeBuddy</span>
@@ -58,6 +64,7 @@ export function NavBar() {
                             border: "none",
                             color: "#f97316",
                             cursor: "pointer",
+                            fontSize: "1rem",
                         }}
                     >
                         Logout

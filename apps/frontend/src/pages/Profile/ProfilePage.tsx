@@ -2,20 +2,18 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { apiClient } from "../../api/client";
 
-type Visibility = "PUBLIC_CAMPUS" | "FRIENDS_ONLY" | "HIDDEN";
-
 type ProfileDto = {
     displayName: string;
     bio: string;
     avatarUrl: string;
-    visibility: Visibility;
+    visibility: string;
 };
 
 const emptyProfile: ProfileDto = {
     displayName: "",
     bio: "",
     avatarUrl: "",
-    visibility: "PUBLIC_CAMPUS",
+    visibility: "PUBLIC",
 };
 
 export function ProfilePage() {
@@ -24,6 +22,10 @@ export function ProfilePage() {
     const [loadedOnce, setLoadedOnce] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string | null>(null);
+
+    // Get current user ID from JWT (you'll need to decode it or store it)
+    // For now, we'll assume you have it stored somewhere
+    const currentUserId = localStorage.getItem("currentUserId");
 
     useEffect(() => {
         void loadProfile();
@@ -35,19 +37,14 @@ export function ProfilePage() {
         setStatus(null);
 
         try {
-            const data = await apiClient.get<any>("/profile/me");
+            // Get profile - backend uses /profile/{userId}
+            const data = await apiClient.get<ProfileDto>(`/profile/${currentUserId}`);
             if (data) {
-                setProfile({
-                    displayName: data.displayName ?? "",
-                    bio: data.bio ?? "",
-                    avatarUrl: data.avatarUrl ?? "",
-                    visibility: (data.visibility as Visibility) ?? "PUBLIC_CAMPUS",
-                });
+                setProfile(data);
             } else {
                 setProfile(emptyProfile);
             }
         } catch (err: any) {
-            // Treat "not found" as "time to create a profile"
             console.warn("Profile load error (treating as empty):", err);
             setProfile(emptyProfile);
         } finally {
@@ -62,7 +59,8 @@ export function ProfilePage() {
         setStatus(null);
 
         try {
-            await apiClient.put("/profile/me", profile);
+            // Update profile - backend uses PUT /profile
+            await apiClient.put("/profile", profile);
             setStatus("Profile saved!");
         } catch (err: any) {
             console.error("Save profile error:", err);
@@ -81,8 +79,8 @@ export function ProfilePage() {
             <h2>Your Profile</h2>
             <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
                 {isNew
-                    ? "You haven't set up your profile yet. This is what other students will see."
-                    : "Update your profile. Your visibility controls how classmates find you."}
+                    ? "Set up your profile so other students can find you."
+                    : "Update your profile information."}
             </p>
 
             <form
@@ -90,12 +88,13 @@ export function ProfilePage() {
                 style={{ maxWidth: 480, display: "flex", flexDirection: "column", gap: "0.75rem" }}
             >
                 <label>
-                    Display Name
+                    Display Name *
                     <input
                         type="text"
                         value={profile.displayName}
                         onChange={(e) => setProfile({ ...profile, displayName: e.target.value })}
                         required
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     />
                 </label>
 
@@ -105,6 +104,7 @@ export function ProfilePage() {
                         rows={3}
                         value={profile.bio}
                         onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     />
                 </label>
 
@@ -114,6 +114,7 @@ export function ProfilePage() {
                         type="url"
                         value={profile.avatarUrl}
                         onChange={(e) => setProfile({ ...profile, avatarUrl: e.target.value })}
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     />
                 </label>
 
@@ -121,18 +122,16 @@ export function ProfilePage() {
                     Visibility
                     <select
                         value={profile.visibility}
-                        onChange={(e) =>
-                            setProfile({ ...profile, visibility: e.target.value as Visibility })
-                        }
+                        onChange={(e) => setProfile({ ...profile, visibility: e.target.value })}
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     >
-                        <option value="PUBLIC_CAMPUS">Public to your campus</option>
-                        <option value="FRIENDS_ONLY">Visible to friends only</option>
-                        <option value="HIDDEN">Hidden from search</option>
+                        <option value="PUBLIC">Public (visible to campus)</option>
+                        <option value="PRIVATE">Private (only me)</option>
                     </select>
                 </label>
 
-                <button type="submit" style={{ marginTop: "0.5rem" }}>
-                    Save profile
+                <button type="submit" style={{ marginTop: "0.5rem", padding: "0.75rem" }}>
+                    Save Profile
                 </button>
             </form>
 

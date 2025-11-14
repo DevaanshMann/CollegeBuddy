@@ -1,6 +1,5 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../api/client";
 import { JWT_STORAGE_KEY } from "../../config";
 
@@ -14,7 +13,6 @@ export function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -27,8 +25,14 @@ export function LoginPage() {
                 password,
             });
 
-            localStorage.setItem(JWT_STORAGE_KEY, res.jwt);
-            navigate("/profile");
+            if (res.jwt) {
+                localStorage.setItem(JWT_STORAGE_KEY, res.jwt);
+
+                // Force a full page reload to update auth state
+                window.location.href = "/profile";
+            } else {
+                setError("Login failed - no token received");
+            }
         } catch (err: any) {
             console.error("Login error:", err);
             setError(err.message ?? "Login failed");
@@ -52,6 +56,7 @@ export function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     />
                 </label>
 
@@ -62,10 +67,11 @@ export function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        style={{ width: "100%", padding: "0.5rem", marginTop: "0.25rem" }}
                     />
                 </label>
 
-                <button type="submit" disabled={loading}>
+                <button type="submit" disabled={loading} style={{ padding: "0.75rem" }}>
                     {loading ? "Logging in..." : "Log in"}
                 </button>
             </form>
