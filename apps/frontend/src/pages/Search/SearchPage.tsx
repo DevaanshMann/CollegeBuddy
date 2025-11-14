@@ -7,6 +7,7 @@ type SearchResult = {
     displayName: string;
     avatarUrl?: string;
     visibility?: string;
+    campusDomain?: string;
 };
 
 export function SearchPage() {
@@ -18,22 +19,34 @@ export function SearchPage() {
 
     async function handleSearch(e: FormEvent) {
         e.preventDefault();
-        if (!query.trim()) return;
+        if (!query.trim()) {
+            setError("Please enter a search term");
+            return;
+        }
 
         setLoading(true);
         setStatus(null);
         setError(null);
 
         try {
-            const raw = await apiClient.get<any>(
-                `/search?query=${encodeURIComponent(query.trim())}`
-            );
-            const list: SearchResult[] = Array.isArray(raw)
-                ? raw
-                : (raw?.results ?? []);
+            console.log("Searching for:", query.trim());
+
+            const response = await apiClient.post<any>("/search", {
+                query: query.trim()
+            });
+
+            console.log("Search response:", response);
+
+            const list: SearchResult[] = Array.isArray(response)
+                ? response
+                : (response?.results ?? []);
+
             setResults(list);
+
             if (list.length === 0) {
                 setStatus(`No classmates found for "${query.trim()}".`);
+            } else {
+                setStatus(`Found ${list.length} result${list.length === 1 ? '' : 's'}`);
             }
         } catch (err: any) {
             console.error("Search error:", err);
@@ -43,16 +56,16 @@ export function SearchPage() {
         }
     }
 
-    async function handleConnect(userId: number) {
+    async function handleConnect(userId: number, displayName: string) {
         setError(null);
         setStatus(null);
 
         try {
             await apiClient.post("/connections/request", {
                 toUserId: userId,
-                message: "Hey, let's connect!",
+                message: `Hey ${displayName}, let's connect!`,
             });
-            setStatus("Connection request sent!");
+            setStatus(`Connection request sent to ${displayName}!`);
         } catch (err: any) {
             console.error("Send request error:", err);
             setError(err.message ?? "Failed to send request");
@@ -63,7 +76,7 @@ export function SearchPage() {
         <div>
             <h2>Search Classmates</h2>
             <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
-                Search only shows students with profiles from your campus (.edu domain).
+                Search for students at your campus. You can search by name.
             </p>
 
             <form
@@ -72,11 +85,25 @@ export function SearchPage() {
             >
                 <input
                     type="text"
-                    placeholder="Search by name or username"
+                    placeholder="Search by name..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    style={{
+                        flex: 1,
+                        padding: "0.75rem",
+                        fontSize: "1rem",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px"
+                    }}
                 />
-                <button type="submit" disabled={loading}>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                        padding: "0.75rem 1.5rem",
+                        fontSize: "1rem"
+                    }}
+                >
                     {loading ? "Searching..." : "Search"}
                 </button>
             </form>
@@ -92,35 +119,52 @@ export function SearchPage() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
-                            padding: "0.6rem 0.75rem",
+                            padding: "1rem",
                             borderRadius: "0.5rem",
                             border: "1px solid #374151",
+                            backgroundColor: "#f9f9f9"
                         }}
                     >
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            {/* Avatar */}
                             <div
                                 style={{
-                                    width: 32,
-                                    height: 32,
+                                    width: 48,
+                                    height: 48,
                                     borderRadius: "999px",
                                     backgroundColor: "#1f2937",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    fontSize: 14,
+                                    fontSize: 18,
+                                    fontWeight: "bold",
+                                    color: "white"
                                 }}
                             >
                                 {r.displayName?.charAt(0).toUpperCase() ?? "?"}
                             </div>
+
+                            {/* Info */}
                             <div>
-                                <div>{r.displayName}</div>
+                                <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+                                    {r.displayName}
+                                </div>
+                                {r.campusDomain && (
+                                    <div style={{ fontSize: 14, color: "#666" }}>
+                                        @{r.campusDomain}
+                                    </div>
+                                )}
                                 {r.visibility && (
-                                    <div style={{ fontSize: 12, color: "#9ca3af" }}>{r.visibility}</div>
+                                    <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                                        {r.visibility === "PUBLIC" ? "🌍 Public" : "🔒 Private"}
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        <button onClick={() => handleConnect(r.userId)}>Connect</button>
+                        <button onClick={() => handleConnect(r.userId, r.displayName)}>
+                            Connect
+                        </button>
                     </div>
                 ))}
             </div>
