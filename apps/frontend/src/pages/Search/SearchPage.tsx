@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { apiClient } from "../../api/client";
+import { JWT_STORAGE_KEY } from "../../config";
 
 type SearchResult = {
     userId: number;
@@ -10,12 +11,65 @@ type SearchResult = {
     campusDomain?: string;
 };
 
+type UserDto = {
+    userId: number;
+    displayName: string;
+    avatarUrl?: string;
+    visibility?: string;
+    campusDomain?: string;
+};
+
+type ConnectionsResponse = {
+    connections: UserDto[];
+    incomingRequests: UserDto[];
+    outgoingRequests: UserDto[];
+};
+
 export function SearchPage() {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+    const [connectionsData, setConnectionsData] = useState<ConnectionsResponse>({
+        connections: [],
+        incomingRequests: [],
+        outgoingRequests: []
+    });
+
+    // Decode JWT to get current user ID
+    const getUserIdFromToken = () => {
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (!token) return null;
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.sub;
+        } catch (e) {
+            console.error("Failed to decode token:", e);
+            return null;
+        }
+    };
+
+    // Load connections data on component mount
+    useEffect(() => {
+        const userId = getUserIdFromToken();
+        if (userId) {
+            setCurrentUserId(Number(userId));
+        }
+
+        async function loadConnections() {
+            try {
+                const res = await apiClient.get<ConnectionsResponse>("/connections");
+                setConnectionsData(res);
+            } catch (err: any) {
+                console.error("Failed to load connections:", err);
+            }
+        }
+
+        void loadConnections();
+    }, []);
 
     async function handleSearch(e: FormEvent) {
         e.preventDefault();
@@ -66,11 +120,29 @@ export function SearchPage() {
                 message: `Hey ${displayName}, let's connect!`,
             });
             setStatus(`Connection request sent to ${displayName}!`);
+
+            // Reload connections to update status
+            const res = await apiClient.get<ConnectionsResponse>("/connections");
+            setConnectionsData(res);
         } catch (err: any) {
             console.error("Send request error:", err);
             setError(err.message ?? "Failed to send request");
         }
     }
+
+    // Helper function to determine connection status
+    const getConnectionStatus = (userId: number): "you" | "connected" | "pending" | "connect" => {
+        if (userId === currentUserId) {
+            return "you";
+        }
+        if (connectionsData.connections.some(c => c.userId === userId)) {
+            return "connected";
+        }
+        if (connectionsData.outgoingRequests.some(r => r.userId === userId)) {
+            return "pending";
+        }
+        return "connect";
+    };
 
     return (
         <div>
@@ -112,61 +184,98 @@ export function SearchPage() {
             {error && <p style={{ color: "red", marginBottom: "0.75rem" }}>{error}</p>}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {results.map((r) => (
-                    <div
-                        key={r.userId}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "1rem",
-                            borderRadius: "0.5rem",
-                            border: "1px solid #374151",
-                            backgroundColor: "#f9f9f9"
-                        }}
-                    >
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                            {/* Avatar */}
-                            <div
-                                style={{
-                                    width: 48,
-                                    height: 48,
-                                    borderRadius: "999px",
-                                    backgroundColor: "#1f2937",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: 18,
-                                    fontWeight: "bold",
-                                    color: "white"
-                                }}
-                            >
-                                {r.displayName?.charAt(0).toUpperCase() ?? "?"}
-                            </div>
+                {results.map((r) => {
+                    const connectionStatus = getConnectionStatus(r.userId);
 
-                            {/* Info */}
-                            <div>
-                                <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
-                                    {r.displayName}
+                    return (
+                        <div
+                            key={r.userId}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "1rem",
+                                borderRadius: "0.5rem",
+                                border: "1px solid #374151",
+                                backgroundColor: "#f9f9f9"
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                {/* Avatar */}
+                                <div
+                                    style={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: "999px",
+                                        backgroundColor: "#1f2937",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: 18,
+                                        fontWeight: "bold",
+                                        color: "white"
+                                    }}
+                                >
+                                    {r.displayName?.charAt(0).toUpperCase() ?? "?"}
                                 </div>
-                                {r.campusDomain && (
-                                    <div style={{ fontSize: 14, color: "#666" }}>
-                                        @{r.campusDomain}
-                                    </div>
-                                )}
-                                {r.visibility && (
-                                    <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                                        {r.visibility === "PUBLIC" ? "🌍 Public" : "🔒 Private"}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
-                        <button onClick={() => handleConnect(r.userId, r.displayName)}>
-                            Connect
-                        </button>
-                    </div>
-                ))}
+                                {/* Info */}
+                                <div>
+                                    <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+                                        {r.displayName}
+                                    </div>
+                                    {r.campusDomain && (
+                                        <div style={{ fontSize: 14, color: "#666" }}>
+                                            @{r.campusDomain}
+                                        </div>
+                                    )}
+                                    {r.visibility && (
+                                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                                            {r.visibility === "PUBLIC" ? "🌍 Public" : "🔒 Private"}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Connection Status / Action */}
+                            {connectionStatus === "you" && (
+                                <span style={{
+                                    padding: "0.5rem 1rem",
+                                    fontSize: "0.9rem",
+                                    color: "#666",
+                                    fontWeight: "bold"
+                                }}>
+                                    You
+                                </span>
+                            )}
+                            {connectionStatus === "connected" && (
+                                <span style={{
+                                    padding: "0.5rem 1rem",
+                                    fontSize: "0.9rem",
+                                    color: "#22c55e",
+                                    fontWeight: "bold"
+                                }}>
+                                    Connected
+                                </span>
+                            )}
+                            {connectionStatus === "pending" && (
+                                <span style={{
+                                    padding: "0.5rem 1rem",
+                                    fontSize: "0.9rem",
+                                    color: "#f59e0b",
+                                    fontWeight: "bold"
+                                }}>
+                                    Pending
+                                </span>
+                            )}
+                            {connectionStatus === "connect" && (
+                                <button onClick={() => handleConnect(r.userId, r.displayName)}>
+                                    Connect
+                                </button>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

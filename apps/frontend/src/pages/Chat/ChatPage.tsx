@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../../api/client";
+import { JWT_STORAGE_KEY } from "../../config";
 
 type Message = {
     id: number;
@@ -15,6 +16,13 @@ type ConversationResponse = {
     messages: Message[];
 };
 
+type ProfileDto = {
+    displayName: string;
+    bio: string;
+    avatarUrl: string;
+    visibility: string;
+};
+
 export function ChatPage() {
     const { otherUserId } = useParams();
     const [conversation, setConversation] = useState<ConversationResponse | null>(
@@ -24,30 +32,55 @@ export function ChatPage() {
     const [error, setError] = useState<string | null>(null);
     const [newMessage, setNewMessage] = useState("");
     const [sending, setSending] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+    const [otherUserProfile, setOtherUserProfile] = useState<ProfileDto | null>(null);
 
     const otherIdNum = otherUserId ? Number(otherUserId) : NaN;
 
+    // Decode JWT to get current user ID
+    const getUserIdFromToken = () => {
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (!token) return null;
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.sub;
+        } catch (e) {
+            console.error("Failed to decode token:", e);
+            return null;
+        }
+    };
+
     useEffect(() => {
+        // Get current user ID
+        const userId = getUserIdFromToken();
+        if (userId) {
+            setCurrentUserId(Number(userId));
+        }
+
         if (!otherUserId) {
             setError("No user specified.");
             setLoading(false);
             return;
         }
 
-        async function loadConversation() {
+        async function loadData() {
             try {
-                const res = await apiClient.get<ConversationResponse>(
-                    `/messages/conversation/${otherUserId}`
-                );
-                setConversation(res);
+                // Load conversation and other user's profile in parallel
+                const [conversationRes, profileRes] = await Promise.all([
+                    apiClient.get<ConversationResponse>(`/messages/conversation/${otherUserId}`),
+                    apiClient.get<ProfileDto>(`/profile/${otherUserId}`)
+                ]);
+                setConversation(conversationRes);
+                setOtherUserProfile(profileRes);
             } catch (err: any) {
-                setError(err.message ?? "Failed to load messages");
+                setError(err.message ?? "Failed to load data");
             } finally {
                 setLoading(false);
             }
         }
 
-        void loadConversation();
+        void loadData();
     }, [otherUserId]);
 
     async function handleSend(e: FormEvent) {
@@ -85,7 +118,7 @@ export function ChatPage() {
 
     return (
         <div>
-            <h2>Chat with user {otherUserId}</h2>
+            <h2>Chat with {otherUserProfile?.displayName || `User ${otherUserId}`}</h2>
 
             {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -101,32 +134,49 @@ export function ChatPage() {
                 }}
             >
                 {conversation.messages.length === 0 && <p>No messages yet. Start the conversation!</p>}
-                {conversation.messages.map((m) => (
-                    <div
-                        key={m.id}
-                        style={{
-                            marginBottom: "0.5rem",
-                            textAlign: "left",
-                        }}
-                    >
+                {conversation.messages.map((m) => {
+                    const isOutgoing = m.senderId === currentUserId;
+                    const senderName = isOutgoing ? "You" : (otherUserProfile?.displayName || "User");
+
+                    return (
                         <div
+                            key={m.id}
                             style={{
-                                display: "inline-block",
-                                padding: "0.4rem 0.6rem",
-                                borderRadius: 8,
-                                background: "#e3f2fd",
+                                marginBottom: "0.5rem",
+                                textAlign: isOutgoing ? "right" : "left",
                             }}
                         >
-                            <div style={{ fontSize: "0.8rem", color: "#555" }}>
-                                From user #{m.senderId}
-                            </div>
-                            <div>{m.body}</div>
-                            <div style={{ fontSize: "0.7rem", color: "#888" }}>
-                                {new Date(m.sentAt).toLocaleString()}
+                            <div
+                                style={{
+                                    display: "inline-block",
+                                    padding: "0.4rem 0.6rem",
+                                    borderRadius: 8,
+                                    background: isOutgoing ? "#007bff" : "#e3f2fd",
+                                    color: isOutgoing ? "#fff" : "#000",
+                                    maxWidth: "70%",
+                                    textAlign: "left",
+                                }}
+                            >
+                                <div style={{
+                                    fontSize: "0.8rem",
+                                    fontWeight: "bold",
+                                    color: isOutgoing ? "#e3f2fd" : "#555",
+                                    marginBottom: "0.2rem"
+                                }}>
+                                    {senderName}
+                                </div>
+                                <div>{m.body}</div>
+                                <div style={{
+                                    fontSize: "0.7rem",
+                                    color: isOutgoing ? "#cce5ff" : "#888",
+                                    marginTop: "0.2rem"
+                                }}>
+                                    {new Date(m.sentAt).toLocaleString()}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <form
