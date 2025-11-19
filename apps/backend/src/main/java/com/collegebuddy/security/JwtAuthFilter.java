@@ -25,20 +25,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/auth/signup") ||
+               path.equals("/auth/login") ||
+               path.equals("/auth/verify") ||
+               path.equals("/auth/resend");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain)
             throws ServletException, IOException {
-
-        // Skip JWT validation for public endpoints
-        String path = request.getRequestURI();
-        if (path.equals("/auth/signup") ||
-            path.equals("/auth/login") ||
-            path.equals("/auth/verify") ||
-            path.equals("/auth/resend")) {
-            chain.doFilter(request, response);
-            return;
-        }
 
         String header = request.getHeader("Authorization");
 
