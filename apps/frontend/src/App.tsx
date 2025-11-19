@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { NavBar } from "./components/NavBar";
+import { LandingPage } from "./pages/Landing/LandingPage";
 import { SignupPage } from "./pages/Auth/SignupPage";
 import { LoginPage } from "./pages/Auth/LoginPage";
 import { VerifyPage } from "./pages/Auth/VerifyPage";
@@ -19,59 +20,67 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
-function App() {
+function AppContent() {
+    const location = useLocation();
     const isAuthenticated = Boolean(localStorage.getItem(JWT_STORAGE_KEY));
+    const showNavBar = location.pathname !== "/" || isAuthenticated;
 
     return (
-        <BrowserRouter>
-            <div style={{ padding: "1rem 2rem", maxWidth: "1200px", margin: "0 auto" }}>
-                <NavBar />
-                <main style={{ marginTop: "2rem" }}>
-                    <Routes>
-                        <Route
-                            path="/"
-                            element={<Navigate to={isAuthenticated ? "/profile" : "/login"} replace />}
-                        />
-                        <Route path="/signup" element={<SignupPage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/verify" element={<VerifyPage />} />
+        <div style={{ padding: showNavBar ? "1rem 2rem" : "0", maxWidth: "1200px", margin: "0 auto" }}>
+            {showNavBar && <NavBar />}
+            <main style={{ marginTop: showNavBar ? "2rem" : "0" }}>
+                <Routes>
+                    <Route
+                        path="/"
+                        element={isAuthenticated ? <Navigate to="/profile" replace /> : <LandingPage />}
+                    />
+                    <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/verify" element={<VerifyPage />} />
 
-                        {/* Protected routes */}
-                        <Route
-                            path="/profile"
-                            element={
-                                <ProtectedRoute>
-                                    <ProfilePage />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/search"
-                            element={
-                                <ProtectedRoute>
-                                    <SearchPage />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/connections"
-                            element={
-                                <ProtectedRoute>
-                                    <ConnectionsPage />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/chat/:otherUserId"
-                            element={
-                                <ProtectedRoute>
-                                    <ChatPage />
-                                </ProtectedRoute>
-                            }
-                        />
-                    </Routes>
-                </main>
-            </div>
+                    {/* Protected routes */}
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/search"
+                        element={
+                            <ProtectedRoute>
+                                <SearchPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/connections"
+                        element={
+                            <ProtectedRoute>
+                                <ConnectionsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/chat/:otherUserId"
+                        element={
+                            <ProtectedRoute>
+                                <ChatPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                </Routes>
+            </main>
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AppContent />
         </BrowserRouter>
     );
 }
