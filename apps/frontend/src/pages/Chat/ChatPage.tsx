@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../../api/client";
 import { JWT_STORAGE_KEY } from "../../config";
@@ -34,6 +34,7 @@ export function ChatPage() {
     const [sending, setSending] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [otherUserProfile, setOtherUserProfile] = useState<ProfileDto | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const otherIdNum = otherUserId ? Number(otherUserId) : NaN;
 
@@ -49,6 +50,10 @@ export function ChatPage() {
             console.error("Failed to decode token:", e);
             return null;
         }
+    };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
@@ -82,6 +87,11 @@ export function ChatPage() {
 
         void loadData();
     }, [otherUserId]);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [conversation?.messages]);
 
     async function handleSend(e: FormEvent) {
         e.preventDefault();
@@ -177,6 +187,7 @@ export function ChatPage() {
                         </div>
                     );
                 })}
+                <div ref={messagesEndRef} />
             </div>
 
             <form
