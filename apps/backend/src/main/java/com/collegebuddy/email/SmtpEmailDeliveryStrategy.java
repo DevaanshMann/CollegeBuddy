@@ -32,7 +32,7 @@ public class SmtpEmailDeliveryStrategy implements EmailDeliveryStrategy {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username:noreply@collegebuddy.com}")
+    @Value("${collegebuddy.email.from:noreply@collegebuddy.app}")
     private String fromAddress;
 
     public SmtpEmailDeliveryStrategy(JavaMailSender mailSender) {
