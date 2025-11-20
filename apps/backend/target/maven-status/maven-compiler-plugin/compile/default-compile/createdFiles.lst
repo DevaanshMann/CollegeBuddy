@@ -52,6 +52,7 @@ com/collegebuddy/notification/NotificationService.class
 com/collegebuddy/repo/MessageRepository.class
 com/collegebuddy/email/SmtpEmailDeliveryStrategy.class
 com/collegebuddy/domain/Role.class
+com/collegebuddy/dto/ConnectionRequestDto.class
 com/collegebuddy/profile/ProfileController.class
 com/collegebuddy/CollegeBuddyApplication.class
 com/collegebuddy/domain/ConnectionRequest.class

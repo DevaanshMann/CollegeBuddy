@@ -37,6 +37,7 @@
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/domain/VerificationToken.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/domain/Visibility.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/dto/AuthResponse.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/dto/ConnectionRequestDto.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/dto/ConnectionStatusDto.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/dto/ConversationDto.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/dto/ConversationResponse.java

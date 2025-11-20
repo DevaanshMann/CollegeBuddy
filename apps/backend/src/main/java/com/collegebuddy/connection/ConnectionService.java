@@ -6,6 +6,7 @@ import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
 import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
 import com.collegebuddy.common.exceptions.UnauthorizedException;
 import com.collegebuddy.domain.*;
+import com.collegebuddy.dto.ConnectionRequestDto;
 import com.collegebuddy.dto.ConnectionStatusDto;
 import com.collegebuddy.dto.RespondToConnectionDto;
 import com.collegebuddy.dto.SendConnectionRequestDto;
@@ -157,13 +158,13 @@ public class ConnectionService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<UserDto> incomingDtos = incomingUserIds.stream()
-                .map(id -> toUserDto(userMap.get(id), profileMap.get(id)))
+        List<ConnectionRequestDto> incomingDtos = incoming.stream()
+                .map(req -> toConnectionRequestDto(req, userMap.get(req.getFromUserId()), profileMap.get(req.getFromUserId())))
                 .filter(Objects::nonNull)
                 .toList();
 
-        List<UserDto> outgoingDtos = outgoingUserIds.stream()
-                .map(id -> toUserDto(userMap.get(id), profileMap.get(id)))
+        List<ConnectionRequestDto> outgoingDtos = outgoing.stream()
+                .map(req -> toConnectionRequestDto(req, userMap.get(req.getToUserId()), profileMap.get(req.getToUserId())))
                 .filter(Objects::nonNull)
                 .toList();
 
@@ -172,5 +173,20 @@ public class ConnectionService {
 
     private UserDto toUserDto(User u, Profile p) {
         return userDtoMapper.toDto(u, p);
+    }
+
+    private ConnectionRequestDto toConnectionRequestDto(ConnectionRequest req, User u, Profile p) {
+        if (u == null) {
+            return null;
+        }
+        UserDto userDto = userDtoMapper.toDto(u, p);
+        return new ConnectionRequestDto(
+                req.getId(),
+                userDto.userId(),
+                userDto.displayName(),
+                userDto.avatarUrl(),
+                userDto.visibility(),
+                userDto.campusDomain()
+        );
     }
 }

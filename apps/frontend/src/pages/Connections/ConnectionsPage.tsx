@@ -10,10 +10,19 @@ type UserDto = {
     campusDomain?: string;
 };
 
+type ConnectionRequestDto = {
+    requestId: number;
+    userId: number;
+    displayName: string;
+    avatarUrl?: string;
+    visibility?: string;
+    campusDomain?: string;
+};
+
 type ConnectionsResponse = {
     connections: UserDto[];
-    incomingRequests: UserDto[];
-    outgoingRequests: UserDto[];
+    incomingRequests: ConnectionRequestDto[];
+    outgoingRequests: ConnectionRequestDto[];
 };
 
 export function ConnectionsPage() {
@@ -47,12 +56,12 @@ export function ConnectionsPage() {
         }
     }
 
-    async function handleRespond(userId: number, decision: string) {
+    async function handleRespond(requestId: number, decision: string) {
         setError(null);
         setStatus(null);
         try {
             await apiClient.post("/connections/respond", {
-                requestId: userId,
+                requestId: requestId,
                 decision: decision,
             });
             setStatus(`Request ${decision.toLowerCase()}ed!`);
@@ -142,10 +151,10 @@ export function ConnectionsPage() {
                             >
                                 <div>{r.displayName}</div>
                                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                                    <button onClick={() => handleRespond(r.userId, "ACCEPT")}>
+                                    <button onClick={() => handleRespond(r.requestId, "ACCEPT")}>
                                         Accept
                                     </button>
-                                    <button onClick={() => handleRespond(r.userId, "DECLINE")}>
+                                    <button onClick={() => handleRespond(r.requestId, "DECLINE")}>
                                         Decline
                                     </button>
                                 </div>
