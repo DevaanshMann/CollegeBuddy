@@ -128,7 +128,7 @@ export function ChatPage() {
 
     return (
         <div>
-            <h2>Chat with {otherUserProfile?.displayName || `User ${otherUserId}`}</h2>
+            <h2 style={{ marginBottom: "1rem" }}>{otherUserProfile?.displayName || `User ${otherUserId}`}</h2>
 
             {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -136,75 +136,109 @@ export function ChatPage() {
                 style={{
                     border: "1px solid #ddd",
                     borderRadius: 8,
-                    padding: "0.75rem",
-                    maxHeight: 400,
-                    overflowY: "auto",
-                    marginBottom: "0.75rem",
                     backgroundColor: "#f9f9f9",
+                    display: "flex",
+                    flexDirection: "column",
+                    height: 500,
                 }}
             >
-                {conversation.messages.length === 0 && <p>No messages yet. Start the conversation!</p>}
-                {conversation.messages.map((m) => {
-                    const isOutgoing = m.senderId === currentUserId;
-                    const senderName = isOutgoing ? "You" : (otherUserProfile?.displayName || "User");
+                {/* Messages area */}
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        padding: "0.75rem",
+                    }}
+                >
+                    {conversation.messages.length === 0 && <p>No messages yet. Start the conversation!</p>}
+                    {conversation.messages.map((m) => {
+                        const isOutgoing = m.senderId === currentUserId;
+                        const senderName = isOutgoing ? "You" : (otherUserProfile?.displayName || "User");
 
-                    return (
-                        <div
-                            key={m.id}
-                            style={{
-                                marginBottom: "0.5rem",
-                                textAlign: isOutgoing ? "right" : "left",
-                            }}
-                        >
+                        return (
                             <div
+                                key={m.id}
                                 style={{
-                                    display: "inline-block",
-                                    padding: "0.4rem 0.6rem",
-                                    borderRadius: 8,
-                                    background: isOutgoing ? "#007bff" : "#e3f2fd",
-                                    color: isOutgoing ? "#fff" : "#000",
-                                    maxWidth: "70%",
-                                    textAlign: "left",
+                                    marginBottom: "0.5rem",
+                                    textAlign: isOutgoing ? "right" : "left",
                                 }}
                             >
-                                <div style={{
-                                    fontSize: "0.8rem",
-                                    fontWeight: "bold",
-                                    color: isOutgoing ? "#e3f2fd" : "#555",
-                                    marginBottom: "0.2rem"
-                                }}>
-                                    {senderName}
-                                </div>
-                                <div>{m.body}</div>
-                                <div style={{
-                                    fontSize: "0.7rem",
-                                    color: isOutgoing ? "#cce5ff" : "#888",
-                                    marginTop: "0.2rem"
-                                }}>
-                                    {new Date(m.sentAt).toLocaleString()}
+                                <div
+                                    style={{
+                                        display: "inline-block",
+                                        padding: "0.4rem 0.6rem",
+                                        borderRadius: 8,
+                                        background: isOutgoing ? "#007bff" : "#e3f2fd",
+                                        color: isOutgoing ? "#fff" : "#000",
+                                        maxWidth: "70%",
+                                        textAlign: "left",
+                                    }}
+                                >
+                                    <div style={{
+                                        fontSize: "0.8rem",
+                                        fontWeight: "bold",
+                                        color: isOutgoing ? "#e3f2fd" : "#555",
+                                        marginBottom: "0.2rem"
+                                    }}>
+                                        {senderName}
+                                    </div>
+                                    <div>{m.body}</div>
+                                    <div style={{
+                                        fontSize: "0.7rem",
+                                        color: isOutgoing ? "#cce5ff" : "#888",
+                                        marginTop: "0.2rem"
+                                    }}>
+                                        {new Date(m.sentAt).toLocaleString()}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-                <div ref={messagesEndRef} />
-            </div>
+                        );
+                    })}
+                    <div ref={messagesEndRef} />
+                </div>
 
-            <form
-                onSubmit={handleSend}
-                style={{ display: "flex", gap: "0.5rem", maxWidth: 600 }}
-            >
-                <input
-                    type="text"
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    style={{ flex: 1, padding: "0.5rem" }}
-                />
-                <button type="submit" disabled={sending}>
-                    {sending ? "Sending..." : "Send"}
-                </button>
-            </form>
+                {/* Input area */}
+                <form
+                    onSubmit={handleSend}
+                    style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        padding: "0.75rem",
+                        borderTop: "1px solid #ddd",
+                        backgroundColor: "#fff",
+                        borderRadius: "0 0 8px 8px",
+                    }}
+                >
+                    <input
+                        type="text"
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        style={{
+                            flex: 1,
+                            padding: "0.5rem",
+                            border: "1px solid #ddd",
+                            borderRadius: 4,
+                            outline: "none",
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        disabled={sending}
+                        style={{
+                            padding: "0.5rem 1rem",
+                            backgroundColor: "#007bff",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            cursor: sending ? "not-allowed" : "pointer",
+                            opacity: sending ? 0.6 : 1,
+                        }}
+                    >
+                        {sending ? "Sending..." : "Send"}
+                    </button>
+                </form>
+            </div>
         </div>
     );
 }

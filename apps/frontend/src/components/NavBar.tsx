@@ -14,7 +14,7 @@ export function NavBar() {
     const onLogout = () => {
         localStorage.removeItem(JWT_STORAGE_KEY);
         setIsAuthed(false);
-        window.location.href = "/login";
+        window.location.href = "/";
     };
 
     const isActive = (path: string) =>
@@ -31,7 +31,7 @@ export function NavBar() {
                 marginBottom: "1rem",
             }}
         >
-            <span style={{ fontWeight: 700, fontSize: "1.2rem" }}>CollegeBuddy</span>
+            <span style={{ fontFamily: "'Pacifico', cursive", fontSize: "1.5rem" }}>CollegeBuddy</span>
 
             {!isAuthed && (
                 <>
