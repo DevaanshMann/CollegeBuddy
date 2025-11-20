@@ -10,6 +10,7 @@ import com.collegebuddy.dto.ConnectionStatusDto;
 import com.collegebuddy.dto.RespondToConnectionDto;
 import com.collegebuddy.dto.SendConnectionRequestDto;
 import com.collegebuddy.dto.UserDto;
+import com.collegebuddy.dto.UserDtoMapper;
 import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ConnectionRequestRepository;
 import com.collegebuddy.repo.ProfileRepository;
@@ -27,15 +28,18 @@ public class ConnectionService {
     private final ConnectionRequestRepository requests;
     private final UserRepository users;
     private final ProfileRepository profiles;
+    private final UserDtoMapper userDtoMapper;
 
     public ConnectionService(ConnectionRepository connections,
                              ConnectionRequestRepository requests,
                              UserRepository users,
-                             ProfileRepository profiles) {
+                             ProfileRepository profiles,
+                             UserDtoMapper userDtoMapper) {
         this.connections = connections;
         this.requests = requests;
         this.users = users;
         this.profiles = profiles;
+        this.userDtoMapper = userDtoMapper;
     }
 
     public void sendConnectionRequest(Long requesterId, String requesterCampusDomain, SendConnectionRequestDto dto) {
@@ -167,23 +171,6 @@ public class ConnectionService {
     }
 
     private UserDto toUserDto(User u, Profile p) {
-        if (u == null) return null;
-
-        String displayName = (p != null && p.getDisplayName() != null)
-                ? p.getDisplayName()
-                : u.getEmail();
-
-        String avatarUrl = (p != null) ? p.getAvatarUrl() : null;
-        String visibility = (p != null && p.getVisibility() != null)
-                ? p.getVisibility().name()
-                : Visibility.PUBLIC.name();
-
-        return new UserDto(
-                u.getId(),
-                displayName,
-                avatarUrl,
-                visibility,
-                u.getCampusDomain()
-        );
+        return userDtoMapper.toDto(u, p);
     }
 }

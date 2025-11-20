@@ -7,6 +7,7 @@ import com.collegebuddy.domain.Visibility;
 import com.collegebuddy.dto.SearchRequest;
 import com.collegebuddy.dto.SearchResultDto;
 import com.collegebuddy.dto.UserDto;
+import com.collegebuddy.dto.UserDtoMapper;
 import com.collegebuddy.repo.ProfileRepository;
 import com.collegebuddy.repo.UserRepository;
 import org.springframework.stereotype.Service;
@@ -20,11 +21,14 @@ public class SearchService {
 
     private final UserRepository users;
     private final ProfileRepository profiles;
+    private final UserDtoMapper userDtoMapper;
 
     public SearchService(UserRepository users,
-                         ProfileRepository profiles) {
+                         ProfileRepository profiles,
+                         UserDtoMapper userDtoMapper) {
         this.users = users;
         this.profiles = profiles;
+        this.userDtoMapper = userDtoMapper;
     }
 
     public SearchResultDto searchCampusDirectory(String campusDomain, Long requesterId, SearchRequest request) {
@@ -42,21 +46,8 @@ public class SearchService {
                 .collect(Collectors.toMap(Profile::getUserId, p -> p));
 
         // 3. build UserDto list with visibility + query filter
-        List<UserDto> results = campusUsers.stream()
-                .map(u -> {
-                    Profile p = profilesByUserId.get(u.getId());
-                    String displayName = p != null ? p.getDisplayName() : u.getEmail();
-                    String avatarUrl = p != null ? p.getAvatarUrl() : null;
-                    String visibility = p != null ? p.getVisibility().name() : Visibility.PUBLIC.name();
-
-                    return new UserDto(
-                            u.getId(),
-                            displayName,
-                            avatarUrl,
-                            visibility,
-                            u.getCampusDomain()
-                    );
-                })
+        List<UserDto> results = userDtoMapper.toDtoList(campusUsers, profilesByUserId)
+                .stream()
                 .filter(dto -> {
                     // visibility rules – PRIVATE profiles only visible to owner
                     if ("PRIVATE".equalsIgnoreCase(dto.visibility()) && !dto.userId().equals(requesterId)) {
