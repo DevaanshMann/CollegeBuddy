@@ -65,3 +65,21 @@ logging:
     com.collegebuddy: DEBUG
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
+
+#    To send actual email instead of using tokens
+#    collegebuddy:
+#      email:
+#        strategy: smtp  # Change from 'logging' to 'smtp'
+#
+#      spring:
+#        mail:
+#          host: smtp.gmail.com  # Or your mail server
+#          port: 587
+#          username: noreply@collegebuddy.com
+#          password: your-app-password
+#          properties:
+#            mail:
+#              smtp:
+#                auth: true
+#                starttls:
+#                  enable: true
