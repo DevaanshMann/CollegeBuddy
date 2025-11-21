@@ -29,13 +29,19 @@ async function request<T>(
         );
     }
 
-    // Assuming all responses are JSON for now
-    if (res.status === 204) {
-        // no content
+    // Handle responses with no content
+    if (res.status === 204 || res.headers.get("content-length") === "0") {
         return undefined as T;
     }
 
-    return (await res.json()) as T;
+    // Check if response has content before parsing JSON
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+        return (await res.json()) as T;
+    }
+
+    // If no content-type or not JSON, return undefined
+    return undefined as T;
 }
 
 export const apiClient = {

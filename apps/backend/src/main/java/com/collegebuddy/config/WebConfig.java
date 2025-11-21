@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         // Allow CORS for static resources (images)
         registry.addMapping("/uploads/**")
-                .allowedOrigins("http://localhost:5173", "http://localhost:5174")
+                .allowedOrigins("http://localhost:3000", "http://localhost:5173", "http://localhost:5174")
                 .allowedMethods("GET", "HEAD", "OPTIONS")
                 .allowCredentials(false); // Important: set to false for static resources
     }
