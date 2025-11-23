@@ -70,6 +70,7 @@
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/media/MediaStorageStrategy.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/media/StorageContext.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/media/StorageException.java
+/Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/messaging/ConversationHelper.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/messaging/DeliveryService.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/messaging/MessagingController.java
 /Users/devaanshmann/Desktop/CS5800 - CollegeBuddy/apps/backend/src/main/java/com/collegebuddy/messaging/MessagingService.java
