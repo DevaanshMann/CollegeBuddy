@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
     Optional<Conversation> findByUserAIdAndUserBId(Long userAId, Long userBId);
+
+    void deleteByUserAIdAndUserBId(Long userAId, Long userBId);
 }

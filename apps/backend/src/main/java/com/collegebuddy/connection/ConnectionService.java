@@ -1,6 +1,7 @@
 package com.collegebuddy.connection;
 
 import com.collegebuddy.common.exceptions.ConnectionAlreadyExistsException;
+import com.collegebuddy.common.exceptions.ConnectionNotFoundException;
 import com.collegebuddy.common.exceptions.ConnectionRequestNotFoundException;
 import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
 import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
@@ -14,9 +15,15 @@ import com.collegebuddy.dto.UserDto;
 import com.collegebuddy.dto.UserDtoMapper;
 import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ConnectionRequestRepository;
+import com.collegebuddy.repo.ConversationRepository;
+import com.collegebuddy.repo.MessageRepository;
 import com.collegebuddy.repo.ProfileRepository;
 import com.collegebuddy.repo.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
@@ -25,65 +32,96 @@ import java.util.stream.Collectors;
 @Service
 public class ConnectionService {
 
+    private static final Logger log = LoggerFactory.getLogger(ConnectionService.class);
+
     private final ConnectionRepository connections;
     private final ConnectionRequestRepository requests;
+    private final ConversationRepository conversations;
+    private final MessageRepository messages;
     private final UserRepository users;
     private final ProfileRepository profiles;
     private final UserDtoMapper userDtoMapper;
 
     public ConnectionService(ConnectionRepository connections,
                              ConnectionRequestRepository requests,
+                             ConversationRepository conversations,
+                             MessageRepository messages,
                              UserRepository users,
                              ProfileRepository profiles,
                              UserDtoMapper userDtoMapper) {
         this.connections = connections;
         this.requests = requests;
+        this.conversations = conversations;
+        this.messages = messages;
         this.users = users;
         this.profiles = profiles;
         this.userDtoMapper = userDtoMapper;
     }
 
+    @Transactional
     public void sendConnectionRequest(Long requesterId, String requesterCampusDomain, SendConnectionRequestDto dto) {
-        Long toUserId = dto.toUserId();
+        log.info("sendConnectionRequest: requesterId={}, toUserId={}", requesterId, dto.toUserId());
 
-        if (Objects.equals(requesterId, toUserId)) {
-            throw new InvalidConnectionActionException("Cannot connect to yourself");
+        try {
+            Long toUserId = dto.toUserId();
+
+            if (Objects.equals(requesterId, toUserId)) {
+                throw new InvalidConnectionActionException("Cannot connect to yourself");
+            }
+
+            log.info("Step 1: Finding target user {}", toUserId);
+            User toUser = users.findById(toUserId)
+                    .orElseThrow(() -> new InvalidConnectionActionException("Target user not found"));
+            log.info("Step 1 complete: Found user {}", toUser.getEmail());
+
+            if (!requesterCampusDomain.equalsIgnoreCase(toUser.getCampusDomain())) {
+                throw new ForbiddenCampusAccessException("Cannot connect across campuses");
+            }
+
+            // normalize pair for connection existence check
+            long a = Math.min(requesterId, toUserId);
+            long b = Math.max(requesterId, toUserId);
+
+            log.info("Step 2: Checking if connection exists between {} and {}", a, b);
+            if (connections.existsByUserAIdAndUserBId(a, b)) {
+                throw new ConnectionAlreadyExistsException("Users are already connected");
+            }
+            log.info("Step 2 complete: No existing connection");
+
+            // prevent duplicate pending requests (in either direction)
+            log.info("Step 3: Checking for pending requests");
+            boolean pendingExists =
+                    requests.existsByFromUserIdAndToUserIdAndStatus(requesterId, toUserId, ConnectionRequestStatus.PENDING) ||
+                            requests.existsByFromUserIdAndToUserIdAndStatus(toUserId, requesterId, ConnectionRequestStatus.PENDING);
+
+            if (pendingExists) {
+                throw new InvalidConnectionActionException("There is already a pending request between these users");
+            }
+            log.info("Step 3 complete: No pending requests");
+
+            // Delete any old requests (ACCEPTED/DECLINED) so we can create a new one
+            log.info("Step 4: Cleaning up old connection requests");
+            requests.deleteByFromUserIdAndToUserId(requesterId, toUserId);
+            requests.deleteByFromUserIdAndToUserId(toUserId, requesterId);
+            log.info("Step 4 complete: Old requests cleaned up");
+
+            log.info("Step 5: Creating connection request");
+            ConnectionRequest req = new ConnectionRequest();
+            req.setFromUserId(requesterId);
+            req.setToUserId(toUserId);
+            req.setMessage(dto.message());
+            req.setStatus(ConnectionRequestStatus.PENDING);
+            req.setCreatedAt(Instant.now());
+
+            requests.save(req);
+            log.info("Step 5 complete: Connection request saved");
+        } catch (Exception e) {
+            log.error("Error in sendConnectionRequest: requesterId={}, toUserId={}", requesterId, dto.toUserId(), e);
+            throw e;
         }
-
-        User toUser = users.findById(toUserId)
-                .orElseThrow(() -> new InvalidConnectionActionException("Target user not found"));
-
-        if (!requesterCampusDomain.equalsIgnoreCase(toUser.getCampusDomain())) {
-            throw new ForbiddenCampusAccessException("Cannot connect across campuses");
-        }
-
-        // normalize pair for connection existence check
-        long a = Math.min(requesterId, toUserId);
-        long b = Math.max(requesterId, toUserId);
-
-        if (connections.existsByUserAIdAndUserBId(a, b)) {
-            throw new ConnectionAlreadyExistsException("Users are already connected");
-        }
-
-        // prevent duplicate pending requests (in either direction)
-        boolean pendingExists =
-                requests.existsByFromUserIdAndToUserIdAndStatus(requesterId, toUserId, ConnectionRequestStatus.PENDING) ||
-                        requests.existsByFromUserIdAndToUserIdAndStatus(toUserId, requesterId, ConnectionRequestStatus.PENDING);
-
-        if (pendingExists) {
-            throw new InvalidConnectionActionException("There is already a pending request between these users");
-        }
-
-        ConnectionRequest req = new ConnectionRequest();
-        req.setFromUserId(requesterId);
-        req.setToUserId(toUserId);
-        req.setMessage(dto.message());
-        req.setStatus(ConnectionRequestStatus.PENDING);
-        req.setCreatedAt(Instant.now());
-
-        requests.save(req);
     }
 
+    @Transactional
     public void respondToConnectionRequest(Long responderId, RespondToConnectionDto dto) {
         ConnectionRequest req = requests.findById(dto.requestId())
                 .orElseThrow(() -> new ConnectionRequestNotFoundException("Request not found"));
@@ -118,6 +156,34 @@ public class ConnectionService {
             requests.save(req);
         } else {
             throw new InvalidConnectionActionException("Decision must be ACCEPT or DECLINE");
+        }
+    }
+
+    @Transactional
+    public void disconnect(Long currentUserId, Long otherUserId) {
+        if (Objects.equals(currentUserId, otherUserId)) {
+            throw new InvalidConnectionActionException("Cannot disconnect from yourself");
+        }
+
+        long a = Math.min(currentUserId, otherUserId);
+        long b = Math.max(currentUserId, otherUserId);
+
+        if (!connections.existsByUserAIdAndUserBId(a, b)) {
+            throw new ConnectionNotFoundException("Connection not found");
+        }
+
+        // Delete the connection
+        connections.deleteByUserAIdAndUserBId(a, b);
+
+        // Delete any old connection requests (in both directions) so users can reconnect
+        requests.deleteByFromUserIdAndToUserId(currentUserId, otherUserId);
+        requests.deleteByFromUserIdAndToUserId(otherUserId, currentUserId);
+
+        // Delete conversation and all messages for a fresh start
+        var conversation = conversations.findByUserAIdAndUserBId(a, b);
+        if (conversation.isPresent()) {
+            messages.deleteByConversationId(conversation.get().getId());
+            conversations.delete(conversation.get());
         }
     }
 

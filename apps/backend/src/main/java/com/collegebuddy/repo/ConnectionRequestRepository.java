@@ -13,4 +13,6 @@ public interface ConnectionRequestRepository extends JpaRepository<ConnectionReq
     List<ConnectionRequest> findByToUserIdAndStatus(Long toUserId, ConnectionRequestStatus status);
 
     List<ConnectionRequest> findByFromUserIdAndStatus(Long fromUserId, ConnectionRequestStatus status);
+
+    void deleteByFromUserIdAndToUserId(Long fromUserId, Long toUserId);
 }

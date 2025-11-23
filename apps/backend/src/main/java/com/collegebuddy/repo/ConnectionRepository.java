@@ -10,4 +10,6 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
     List<Connection> findByUserAIdOrUserBId(Long userAId, Long userBId);
 
     boolean existsByUserAIdAndUserBId(Long userAId, Long userBId);
+
+    void deleteByUserAIdAndUserBId(Long userAId, Long userBId);
 }

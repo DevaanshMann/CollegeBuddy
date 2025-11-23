@@ -97,13 +97,13 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         Optional<User> userOpt = users.findByEmail(request.email());
         if (userOpt.isEmpty()) {
-            throw new UnauthorizedException("Bad credentials");
+            throw new UnauthorizedException("Invalid email or password");
         }
 
         User user = userOpt.get();
 
         if (!encoder.matches(request.password(), user.getHashedPassword())) {
-            throw new UnauthorizedException("Bad credentials");
+            throw new UnauthorizedException("Invalid email or password");
         }
 
         if (user.getStatus() != AccountStatus.ACTIVE) {

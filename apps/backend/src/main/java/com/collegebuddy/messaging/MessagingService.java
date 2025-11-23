@@ -86,48 +86,55 @@ public class MessagingService {
 
     @Transactional
     public ConversationResponse getConversation(Long currentUserId, String campusDomain, Long otherUserId) {
-        log.debug("getConversation called: currentUserId={}, campusDomain={}, otherUserId={}",
+        log.info("getConversation called: currentUserId={}, campusDomain={}, otherUserId={}",
                 currentUserId, campusDomain, otherUserId);
 
-        if (Objects.equals(currentUserId, otherUserId)) {
-            throw new MessagePermissionException("Cannot load conversation with yourself");
+        try {
+            if (Objects.equals(currentUserId, otherUserId)) {
+                throw new MessagePermissionException("Cannot load conversation with yourself");
+            }
+
+            log.info("Step 1: Finding other user with id={}", otherUserId);
+            User other = users.findById(otherUserId)
+                    .orElseThrow(() -> new MessagePermissionException("User not found"));
+            log.info("Step 1 complete: Found user {}", other.getEmail());
+
+            if (!campusDomain.equalsIgnoreCase(other.getCampusDomain())) {
+                throw new MessagePermissionException("Different campus");
+            }
+
+            long a = Math.min(currentUserId, otherUserId);
+            long b = Math.max(currentUserId, otherUserId);
+
+            log.info("Step 2: Checking connection between userA={} and userB={}", a, b);
+            boolean connected = connections.existsByUserAIdAndUserBId(a, b);
+            log.info("Step 2 complete: Connection exists: {}", connected);
+
+            if (!connected) {
+                throw new MessagePermissionException("You must be connected to view this conversation");
+            }
+
+            log.info("Step 3: Finding or creating conversation for userA={}, userB={}", a, b);
+            var convo = conversationHelper.findOrCreateConversation(a, b);
+            log.info("Step 3 complete: Conversation id={}", convo.getId());
+
+            log.info("Step 4: Fetching messages for conversation id={}", convo.getId());
+            List<MessageDto> msgs = messages.findByConversationIdOrderBySentAtAsc(convo.getId())
+                    .stream()
+                    .sorted(Comparator.comparing(Message::getSentAt))
+                    .map(m -> new MessageDto(
+                            m.getId(),
+                            m.getSenderId(),
+                            m.getBody(),
+                            m.getSentAt()
+                    ))
+                    .toList();
+            log.info("Step 4 complete: Found {} messages", msgs.size());
+
+            return new ConversationResponse(convo.getId(), msgs);
+        } catch (Exception e) {
+            log.error("Error in getConversation: currentUserId={}, otherUserId={}", currentUserId, otherUserId, e);
+            throw e;
         }
-
-        User other = users.findById(otherUserId)
-                .orElseThrow(() -> new MessagePermissionException("User not found"));
-
-        if (!campusDomain.equalsIgnoreCase(other.getCampusDomain())) {
-            throw new MessagePermissionException("Different campus");
-        }
-
-        long a = Math.min(currentUserId, otherUserId);
-        long b = Math.max(currentUserId, otherUserId);
-
-        log.debug("Checking connection between userA={} and userB={}", a, b);
-        boolean connected = connections.existsByUserAIdAndUserBId(a, b);
-        log.debug("Connection exists: {}", connected);
-
-        if (!connected) {
-            throw new MessagePermissionException("You must be connected to view this conversation");
-        }
-
-        log.debug("Looking for existing conversation");
-        var convo = conversationHelper.findOrCreateConversation(a, b);
-
-        log.debug("Conversation found/created with id={}", convo.getId());
-
-        List<MessageDto> msgs = messages.findByConversationIdOrderBySentAtAsc(convo.getId())
-                .stream()
-                .sorted(Comparator.comparing(Message::getSentAt))
-                .map(m -> new MessageDto(
-                        m.getId(),
-                        m.getSenderId(),
-                        m.getBody(),
-                        m.getSentAt()
-                ))
-                .toList();
-
-        log.debug("Returning conversation with {} messages", msgs.size());
-        return new ConversationResponse(convo.getId(), msgs);
     }
 }

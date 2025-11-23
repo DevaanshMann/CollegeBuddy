@@ -24,9 +24,24 @@ async function request<T>(
 
     if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(
-            `Request failed with status ${res.status}${text ? `: ${text}` : ""}`
-        );
+
+        // Try to parse JSON error response and extract message
+        let errorMessage = `Request failed with status ${res.status}`;
+        try {
+            const errorJson = JSON.parse(text);
+            if (errorJson.message) {
+                errorMessage = errorJson.message;
+            }
+        } catch {
+            // If not JSON, use status-based message
+            if (res.status === 401) {
+                errorMessage = "Invalid email or password";
+            } else if (text) {
+                errorMessage = `Request failed with status ${res.status}: ${text}`;
+            }
+        }
+
+        throw new Error(errorMessage);
     }
 
     // Handle responses with no content

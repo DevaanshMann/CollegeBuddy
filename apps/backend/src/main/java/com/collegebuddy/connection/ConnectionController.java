@@ -38,4 +38,11 @@ public class ConnectionController {
         ConnectionStatusDto status = connectionService.getConnectionStatus(current.id());
         return ResponseEntity.ok(status);
     }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> disconnect(@PathVariable Long userId) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        connectionService.disconnect(current.id(), userId);
+        return ResponseEntity.ok().build();
+    }
 }

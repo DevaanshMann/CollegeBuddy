@@ -37,6 +37,7 @@ export function SearchPage() {
         incomingRequests: [],
         outgoingRequests: []
     });
+    const [confirmDisconnect, setConfirmDisconnect] = useState<{ userId: number; displayName: string } | null>(null);
 
     // Decode JWT to get current user ID
     const getUserIdFromToken = () => {
@@ -127,6 +128,31 @@ export function SearchPage() {
         } catch (err: any) {
             console.error("Send request error:", err);
             setError(err.message ?? "Failed to send request");
+        }
+    }
+
+    function showDisconnectConfirm(userId: number, displayName: string) {
+        setConfirmDisconnect({ userId, displayName });
+    }
+
+    async function handleDisconnect() {
+        if (!confirmDisconnect) return;
+
+        setError(null);
+        setStatus(null);
+
+        try {
+            await apiClient.del(`/connections/${confirmDisconnect.userId}`);
+            setStatus(`Disconnected from ${confirmDisconnect.displayName}`);
+            setConfirmDisconnect(null);
+
+            // Reload connections to update status
+            const res = await apiClient.get<ConnectionsResponse>("/connections");
+            setConnectionsData(res);
+        } catch (err: any) {
+            console.error("Disconnect error:", err);
+            setError(err.message ?? "Failed to disconnect");
+            setConfirmDisconnect(null);
         }
     }
 
@@ -249,14 +275,21 @@ export function SearchPage() {
                                 </span>
                             )}
                             {connectionStatus === "connected" && (
-                                <span style={{
-                                    padding: "0.5rem 1rem",
-                                    fontSize: "0.9rem",
-                                    color: "#22c55e",
-                                    fontWeight: "bold"
-                                }}>
-                                    Connected
-                                </span>
+                                <button
+                                    onClick={() => showDisconnectConfirm(r.userId, r.displayName)}
+                                    style={{
+                                        backgroundColor: "#dc2626",
+                                        color: "white",
+                                        border: "none",
+                                        padding: "0.5rem 1rem",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        fontSize: "0.9rem",
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    Disconnect
+                                </button>
                             )}
                             {connectionStatus === "pending" && (
                                 <span style={{
@@ -277,6 +310,69 @@ export function SearchPage() {
                     );
                 })}
             </div>
+
+            {/* Disconnect Confirmation Modal */}
+            {confirmDisconnect && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                    }}
+                >
+                    <div
+                        style={{
+                            backgroundColor: "white",
+                            padding: "2rem",
+                            borderRadius: "0.5rem",
+                            maxWidth: "400px",
+                            textAlign: "center",
+                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+                        }}
+                    >
+                        <h3 style={{ marginBottom: "1rem" }}>Confirm Disconnect</h3>
+                        <p style={{ marginBottom: "1.5rem", color: "#666" }}>
+                            Are you sure you want to disconnect from <strong>{confirmDisconnect.displayName}</strong>?
+                            You will need to send a new connection request to reconnect.
+                        </p>
+                        <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                            <button
+                                onClick={() => setConfirmDisconnect(null)}
+                                style={{
+                                    padding: "0.5rem 1.5rem",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ddd",
+                                    backgroundColor: "white",
+                                    color: "#333",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDisconnect}
+                                style={{
+                                    padding: "0.5rem 1.5rem",
+                                    borderRadius: "4px",
+                                    border: "none",
+                                    backgroundColor: "#dc2626",
+                                    color: "white",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
