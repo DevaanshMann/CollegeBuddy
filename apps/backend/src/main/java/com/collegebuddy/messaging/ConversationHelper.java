@@ -4,10 +4,8 @@ import com.collegebuddy.domain.Conversation;
 import com.collegebuddy.repo.ConversationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class ConversationHelper {
@@ -20,27 +18,15 @@ public class ConversationHelper {
         this.conversations = conversations;
     }
 
+    @Transactional
     public Conversation findOrCreateConversation(long userAId, long userBId) {
-        // First try to find existing
-        var existing = conversations.findByUserAIdAndUserBId(userAId, userBId);
-        if (existing.isPresent()) {
-            log.debug("Found existing conversation for userA={} and userB={}", userAId, userBId);
-            return existing.get();
-        }
+        log.debug("findOrCreateConversation called for userA={} and userB={}", userAId, userBId);
 
-        // Create new conversation
-        try {
-            log.debug("Creating new conversation for userA={} and userB={}", userAId, userBId);
-            var c = new Conversation();
-            c.setUserAId(userAId);
-            c.setUserBId(userBId);
-            c.setCreatedAt(Instant.now());
-            return conversations.save(c);
-        } catch (DataIntegrityViolationException e) {
-            // Conversation already exists (race condition or cache issue) - fetch it
-            log.debug("Conversation already exists, fetching for userA={} and userB={}", userAId, userBId);
-            return conversations.findByUserAIdAndUserBId(userAId, userBId)
-                    .orElseThrow(() -> new RuntimeException("Conversation should exist after constraint violation"));
-        }
+        // Use native SQL upsert - won't throw exception if already exists
+        conversations.insertIfNotExists(userAId, userBId);
+
+        // Now fetch the conversation (guaranteed to exist)
+        return conversations.findByUserAIdAndUserBId(userAId, userBId)
+                .orElseThrow(() -> new RuntimeException("Conversation should exist after insert"));
     }
 }

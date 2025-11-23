@@ -179,11 +179,11 @@ public class ConnectionService {
         requests.deleteByFromUserIdAndToUserId(currentUserId, otherUserId);
         requests.deleteByFromUserIdAndToUserId(otherUserId, currentUserId);
 
-        // Delete conversation and all messages for a fresh start
+        // Delete conversation (messages auto-deleted via ON DELETE CASCADE)
         var conversation = conversations.findByUserAIdAndUserBId(a, b);
         if (conversation.isPresent()) {
-            messages.deleteByConversationId(conversation.get().getId());
             conversations.delete(conversation.get());
+            conversations.flush(); // Ensure delete is executed immediately
         }
     }
 
