@@ -20,6 +20,10 @@ export function NavBar() {
     const isActive = (path: string) =>
         location.pathname === path ? { textDecoration: "underline", fontWeight: "bold" } : {};
 
+    const isLoginPage = location.pathname === "/login";
+    const isSignupPage = location.pathname === "/signup";
+    const isAuthPage = isLoginPage || isSignupPage;
+
     return (
         <nav
             style={{
@@ -31,16 +35,22 @@ export function NavBar() {
                 marginBottom: "1rem",
             }}
         >
-            <span style={{ fontFamily: "'Pacifico', cursive", fontSize: "1.5rem" }}>CollegeBuddy</span>
+            {!isAuthPage && (
+                <span style={{ fontFamily: "'Pacifico', cursive", fontSize: "1.5rem" }}>CollegeBuddy</span>
+            )}
 
             {!isAuthed && (
                 <>
-                    <Link to="/signup" style={isActive("/signup")}>
-                        Sign Up
-                    </Link>
-                    <Link to="/login" style={isActive("/login")}>
-                        Login
-                    </Link>
+                    {!isSignupPage && (
+                        <Link to="/signup" style={isActive("/signup")}>
+                            Sign Up
+                        </Link>
+                    )}
+                    {!isLoginPage && (
+                        <Link to="/login" style={isActive("/login")}>
+                            Login
+                        </Link>
+                    )}
                 </>
             )}
 
