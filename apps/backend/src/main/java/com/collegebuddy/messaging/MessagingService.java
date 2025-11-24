@@ -173,7 +173,7 @@ public class MessagingService {
 
         var convoOpt = conversations.findByUserAIdAndUserBId(a, b);
         if (convoOpt.isPresent()) {
-            int updated = messages.markAsRead(convoOpt.get().getId(), currentUserId);
+            int updated = messages.markAsRead(convoOpt.get().getId(), currentUserId, Instant.now());
             log.info("Marked {} messages as read in conversation between {} and {}", updated, currentUserId, otherUserId);
         }
     }

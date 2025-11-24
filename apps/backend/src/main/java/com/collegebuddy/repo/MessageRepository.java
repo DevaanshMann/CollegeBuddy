@@ -21,7 +21,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     // Mark all messages in a conversation as read (for messages not sent by the current user)
     @Modifying
-    @Query("UPDATE Message m SET m.readAt = CURRENT_TIMESTAMP " +
+    @Query("UPDATE Message m SET m.readAt = :readAt " +
            "WHERE m.conversationId = :conversationId AND m.senderId != :userId AND m.readAt IS NULL")
-    int markAsRead(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
+    int markAsRead(@Param("conversationId") Long conversationId, @Param("userId") Long userId, @Param("readAt") java.time.Instant readAt);
 }
