@@ -1,15 +1,63 @@
 package com.collegebuddy.testutil;
 
+import com.collegebuddy.repo.*;
+import com.collegebuddy.security.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Base class for integration tests.
- * You can wire Testcontainers/Postgres here.
- */
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 public abstract class BaseIntegrationTest {
 
+    @Autowired
+    protected MockMvc mockMvc;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected JwtService jwtService;
+
+    @Autowired
+    protected UserRepository userRepository;
+
+    @Autowired
+    protected ProfileRepository profileRepository;
+
+    @Autowired
+    protected ConnectionRepository connectionRepository;
+
+    @Autowired
+    protected ConnectionRequestRepository connectionRequestRepository;
+
+    @Autowired
+    protected ConversationRepository conversationRepository;
+
+    @Autowired
+    protected MessageRepository messageRepository;
+
     @BeforeEach
-    void commonSetup() {
-        // TODO: start containers, clean DB, etc.
+    void cleanDatabase() {
+        messageRepository.deleteAll();
+        conversationRepository.deleteAll();
+        connectionRepository.deleteAll();
+        connectionRequestRepository.deleteAll();
+        profileRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    protected String generateToken(Long userId, String campusDomain) {
+        return jwtService.issueToken(userId, campusDomain);
+    }
+
+    protected String bearerToken(String token) {
+        return "Bearer " + token;
     }
 }
