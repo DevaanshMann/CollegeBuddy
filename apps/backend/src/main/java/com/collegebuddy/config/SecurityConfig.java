@@ -43,12 +43,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        // Public endpoints (signup/login/verify/resend)
+        // Public endpoints (signup/login/verify/resend + static files)
         RequestMatcher publicEndpoints = new OrRequestMatcher(
                 new AntPathRequestMatcher("/auth/signup"),
                 new AntPathRequestMatcher("/auth/login"),
                 new AntPathRequestMatcher("/auth/verify"),
-                new AntPathRequestMatcher("/auth/resend")
+                new AntPathRequestMatcher("/auth/resend"),
+                new AntPathRequestMatcher("/uploads/avatars/**")
         );
 
         http
