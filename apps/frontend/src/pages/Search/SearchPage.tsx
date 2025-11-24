@@ -281,10 +281,10 @@ export function SearchPage() {
                                         backgroundColor: "#dc2626",
                                         color: "white",
                                         border: "none",
-                                        padding: "0.5rem 1rem",
+                                        padding: "0.6rem 1.2rem",
                                         borderRadius: "4px",
                                         cursor: "pointer",
-                                        fontSize: "0.9rem",
+                                        fontSize: "1.1rem",
                                         fontWeight: "bold",
                                         fontFamily: "inherit"
                                     }}
