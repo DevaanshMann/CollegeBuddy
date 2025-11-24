@@ -35,4 +35,11 @@ public class MessagingController {
         );
         return ResponseEntity.ok(resp);
     }
+
+    @PostMapping("/mark-read/{otherUserId}")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long otherUserId) {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        messagingService.markConversationAsRead(current.id(), otherUserId);
+        return ResponseEntity.ok().build();
+    }
 }

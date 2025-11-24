@@ -78,6 +78,9 @@ export function ChatPage() {
                 ]);
                 setConversation(conversationRes);
                 setOtherUserProfile(profileRes);
+
+                // Mark messages as read
+                await apiClient.post(`/messages/mark-read/${otherUserId}`, {});
             } catch (err: any) {
                 setError(err.message ?? "Failed to load data");
             } finally {
@@ -216,10 +219,11 @@ export function ChatPage() {
                         onChange={(e) => setNewMessage(e.target.value)}
                         style={{
                             flex: 1,
-                            padding: "0.5rem",
+                            padding: "0.75rem",
                             border: "1px solid #ddd",
                             borderRadius: 4,
                             outline: "none",
+                            fontSize: "1.2rem",
                         }}
                     />
                     <button

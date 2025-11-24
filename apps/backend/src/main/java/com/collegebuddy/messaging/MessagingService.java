@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -135,6 +137,44 @@ public class MessagingService {
         } catch (Exception e) {
             log.error("Error in getConversation: currentUserId={}, otherUserId={}", currentUserId, otherUserId, e);
             throw e;
+        }
+    }
+
+    /**
+     * Get unread message counts for all conversations with connected users
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> getUnreadCounts(Long userId, List<Long> friendUserIds) {
+        Map<Long, Long> unreadCounts = new HashMap<>();
+
+        for (Long friendId : friendUserIds) {
+            long a = Math.min(userId, friendId);
+            long b = Math.max(userId, friendId);
+
+            var convoOpt = conversations.findByUserAIdAndUserBId(a, b);
+            if (convoOpt.isPresent()) {
+                long count = messages.countUnreadInConversation(convoOpt.get().getId(), userId);
+                if (count > 0) {
+                    unreadCounts.put(friendId, count);
+                }
+            }
+        }
+
+        return unreadCounts;
+    }
+
+    /**
+     * Mark all messages in a conversation as read
+     */
+    @Transactional
+    public void markConversationAsRead(Long currentUserId, Long otherUserId) {
+        long a = Math.min(currentUserId, otherUserId);
+        long b = Math.max(currentUserId, otherUserId);
+
+        var convoOpt = conversations.findByUserAIdAndUserBId(a, b);
+        if (convoOpt.isPresent()) {
+            int updated = messages.markAsRead(convoOpt.get().getId(), currentUserId);
+            log.info("Marked {} messages as read in conversation between {} and {}", updated, currentUserId, otherUserId);
         }
     }
 }

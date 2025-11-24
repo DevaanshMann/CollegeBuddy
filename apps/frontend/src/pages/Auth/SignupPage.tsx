@@ -67,7 +67,7 @@ export function SignupPage() {
                     style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
                 >
                     <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, fontSize: "1.1rem" }}>
                             Email (.edu)
                         </label>
                         <input
@@ -80,13 +80,14 @@ export function SignupPage() {
                                 padding: "0.75rem",
                                 borderRadius: "4px",
                                 border: "1px solid #ccc",
-                                boxSizing: "border-box"
+                                boxSizing: "border-box",
+                                fontSize: "1.1rem"
                             }}
                         />
                     </div>
 
                     <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, fontSize: "1.1rem" }}>
                             Password
                         </label>
                         <input
@@ -99,13 +100,14 @@ export function SignupPage() {
                                 padding: "0.75rem",
                                 borderRadius: "4px",
                                 border: "1px solid #ccc",
-                                boxSizing: "border-box"
+                                boxSizing: "border-box",
+                                fontSize: "1.1rem"
                             }}
                         />
                     </div>
 
                     <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
+                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, fontSize: "1.1rem" }}>
                             Campus Domain
                         </label>
                         <input
@@ -118,7 +120,8 @@ export function SignupPage() {
                                 padding: "0.75rem",
                                 borderRadius: "4px",
                                 border: "1px solid #ccc",
-                                boxSizing: "border-box"
+                                boxSizing: "border-box",
+                                fontSize: "1.1rem"
                             }}
                         />
                     </div>

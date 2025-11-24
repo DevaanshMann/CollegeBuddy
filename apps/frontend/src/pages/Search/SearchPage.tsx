@@ -247,7 +247,7 @@ export function SearchPage() {
 
                                 {/* Info */}
                                 <div>
-                                    <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+                                    <div style={{ fontWeight: "bold", fontSize: "1.4rem" }}>
                                         {r.displayName}
                                     </div>
                                     {r.campusDomain && (
@@ -285,7 +285,8 @@ export function SearchPage() {
                                         borderRadius: "4px",
                                         cursor: "pointer",
                                         fontSize: "0.9rem",
-                                        fontWeight: "bold"
+                                        fontWeight: "bold",
+                                        fontFamily: "inherit"
                                     }}
                                 >
                                     Disconnect

@@ -13,6 +13,7 @@ import com.collegebuddy.dto.RespondToConnectionDto;
 import com.collegebuddy.dto.SendConnectionRequestDto;
 import com.collegebuddy.dto.UserDto;
 import com.collegebuddy.dto.UserDtoMapper;
+import com.collegebuddy.messaging.MessagingService;
 import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ConnectionRequestRepository;
 import com.collegebuddy.repo.ConversationRepository;
@@ -41,6 +42,7 @@ public class ConnectionService {
     private final UserRepository users;
     private final ProfileRepository profiles;
     private final UserDtoMapper userDtoMapper;
+    private final MessagingService messagingService;
 
     public ConnectionService(ConnectionRepository connections,
                              ConnectionRequestRepository requests,
@@ -48,7 +50,8 @@ public class ConnectionService {
                              MessageRepository messages,
                              UserRepository users,
                              ProfileRepository profiles,
-                             UserDtoMapper userDtoMapper) {
+                             UserDtoMapper userDtoMapper,
+                             MessagingService messagingService) {
         this.connections = connections;
         this.requests = requests;
         this.conversations = conversations;
@@ -56,6 +59,7 @@ public class ConnectionService {
         this.users = users;
         this.profiles = profiles;
         this.userDtoMapper = userDtoMapper;
+        this.messagingService = messagingService;
     }
 
     @Transactional
@@ -234,7 +238,11 @@ public class ConnectionService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        return new ConnectionStatusDto(connectionDtos, incomingDtos, outgoingDtos);
+        // Get unread message counts for each connection
+        List<Long> friendIds = new ArrayList<>(connectionUserIds);
+        Map<Long, Long> unreadCounts = messagingService.getUnreadCounts(userId, friendIds);
+
+        return new ConnectionStatusDto(connectionDtos, incomingDtos, outgoingDtos, unreadCounts);
     }
 
     private UserDto toUserDto(User u, Profile p) {

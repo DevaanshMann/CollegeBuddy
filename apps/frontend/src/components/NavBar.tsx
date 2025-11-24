@@ -17,8 +17,23 @@ export function NavBar() {
         window.location.href = "/";
     };
 
-    const isActive = (path: string) =>
-        location.pathname === path ? { textDecoration: "underline", fontWeight: "bold" } : {};
+    const getPillStyle = (path: string) => {
+        const isCurrentPage = location.pathname === path;
+        return {
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.5rem 1rem",
+            borderRadius: "999px",
+            backgroundColor: isCurrentPage ? "#007bff" : "#f3f4f6",
+            color: isCurrentPage ? "white" : "#333",
+            textDecoration: "none",
+            fontWeight: isCurrentPage ? "bold" : "normal",
+            fontSize: "1.1rem",
+            transition: "all 0.2s ease",
+            border: isCurrentPage ? "2px solid #007bff" : "2px solid transparent",
+        } as const;
+    };
 
     const isLoginPage = location.pathname === "/login";
     const isSignupPage = location.pathname === "/signup";
@@ -29,10 +44,11 @@ export function NavBar() {
             style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "1rem",
-                borderBottom: "1px solid #374151",
-                paddingBottom: "0.75rem",
-                marginBottom: "1rem",
+                gap: "0.75rem",
+                borderBottom: "1px solid #e5e7eb",
+                paddingBottom: "1rem",
+                marginBottom: "1.5rem",
+                flexWrap: "wrap",
             }}
         >
             {!isAuthPage && (
@@ -42,12 +58,12 @@ export function NavBar() {
             {!isAuthed && (
                 <>
                     {!isSignupPage && (
-                        <Link to="/signup" style={isActive("/signup")}>
+                        <Link to="/signup" style={getPillStyle("/signup")}>
                             Sign Up
                         </Link>
                     )}
                     {!isLoginPage && (
-                        <Link to="/login" style={isActive("/login")}>
+                        <Link to="/login" style={getPillStyle("/login")}>
                             Login
                         </Link>
                     )}
@@ -56,28 +72,38 @@ export function NavBar() {
 
             {isAuthed && (
                 <>
-                    <Link to="/profile" style={isActive("/profile")}>
-                        Profile
+                    <Link to="/profile" style={getPillStyle("/profile")}>
+                        <span>👤</span>
+                        <span>Profile</span>
                     </Link>
-                    <Link to="/search" style={isActive("/search")}>
-                        Search
+                    <Link to="/search" style={getPillStyle("/search")}>
+                        <span>🔍</span>
+                        <span>Search</span>
                     </Link>
-                    <Link to="/connections" style={isActive("/connections")}>
-                        Connections
+                    <Link to="/connections" style={getPillStyle("/connections")}>
+                        <span>🤝</span>
+                        <span>Connections</span>
                     </Link>
 
                     <button
                         onClick={onLogout}
                         style={{
                             marginLeft: "auto",
-                            background: "transparent",
-                            border: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.5rem",
+                            padding: "0.5rem 1rem",
+                            borderRadius: "999px",
+                            backgroundColor: "#fef2f2",
+                            border: "2px solid #f97316",
                             color: "#f97316",
                             cursor: "pointer",
-                            fontSize: "1rem",
+                            fontSize: "1.1rem",
+                            fontFamily: "inherit",
                         }}
                     >
-                        Logout
+                        <span>🚪</span>
+                        <span>Logout</span>
                     </button>
                 </>
             )}
