@@ -21,7 +21,7 @@ endlegend
 ' ========================================
 ' PRESENTATION LAYER
 ' ========================================
-package "Presentation Layer (Controllers)" <<SINGLETON_COLOR_COLOR>> {
+package "Presentation Layer (Controllers)" <<SINGLETON_COLOR>> {
   class AuthController {
     +signup()
     +login()
