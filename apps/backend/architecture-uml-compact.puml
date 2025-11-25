@@ -3,7 +3,7 @@
 !define STRATEGY_COLOR #FFE5CC
 !define FACTORY_COLOR #E5CCFF
 !define REPOSITORY_COLOR #CCE5FF
-!define MVC_COLOR #CCFFCC
+!define SINGLETON_COLOR #CCFFCC
 
 title CollegeBuddy Backend - Compact Architecture Overview
 
@@ -14,14 +14,14 @@ legend right
   |<back:#FFE5CC>   </back>| Strategy Pattern |
   |<back:#E5CCFF>   </back>| Factory Pattern |
   |<back:#CCE5FF>   </back>| Repository Pattern |
-  |<back:#CCFFCC>   </back>| MVC Pattern |
+  |<back:#CCFFCC>   </back>| Singleton Pattern |
   | Chain of Responsibility (Filters) |
 endlegend
 
 ' ========================================
 ' PRESENTATION LAYER
 ' ========================================
-package "Presentation Layer (Controllers)" <<MVC_COLOR>> {
+package "Presentation Layer (Controllers)" <<SINGLETON_COLOR_COLOR>> {
   class AuthController {
     +signup()
     +login()
@@ -67,7 +67,7 @@ package "Filter Chain" {
 ' ========================================
 ' SERVICE LAYER
 ' ========================================
-package "Service Layer (Business Logic)" <<MVC_COLOR>> {
+package "Service Layer (Business Logic)" <<SINGLETON_COLOR>> {
   class AuthService {
     +signup()
     +login()
