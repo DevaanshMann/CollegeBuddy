@@ -264,17 +264,14 @@ note as N1
   • ErrorResponseFactory - Consistent error creation
   • UserDtoMapper - DTO object creation
 
-  <b>4. MVC Pattern</b>
-  • Controllers (presentation)
-  • Services (business logic)
-  • Repositories (data access)
+  <b>4. Singleton Pattern</b>
+  • All classes annotated with @Service, @Component,
+    @RestController, @Configuration
 
   <b>5. Chain of Responsibility</b>
   • Filter chain for request processing
   • Logging → Rate Limiting → JWT Auth
 
-  <b>6. Dependency Injection</b>
-  • Spring IoC container manages all dependencies
 end note
 
 @enduml
