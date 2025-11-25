@@ -1,0 +1,626 @@
+@startuml CollegeBuddy Backend Architecture
+
+!define STRATEGY_COLOR #FFE5CC
+!define FACTORY_COLOR #E5CCFF
+!define REPOSITORY_COLOR #CCE5FF
+!define FILTER_COLOR #FFCCCC
+!define CONTROLLER_COLOR #CCFFCC
+!define SERVICE_COLOR #FFFFCC
+
+title CollegeBuddy Backend - Architecture with Design Patterns
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+' ========================================
+' LEGEND
+' ========================================
+legend right
+  |<back:#FFE5CC>   </back>| Strategy Pattern |
+  |<back:#E5CCFF>   </back>| Factory Pattern |
+  |<back:#CCE5FF>   </back>| Repository Pattern |
+  |<back:#FFCCCC>   </back>| Filter Chain Pattern |
+  |<back:#CCFFCC>   </back>| Controller (MVC) |
+  |<back:#FFFFCC>   </back>| Service Layer |
+endlegend
+
+' ========================================
+' DOMAIN LAYER
+' ========================================
+package "Domain Layer" {
+  class User {
+    -Long id
+    -String email
+    -String hashedPassword
+    -String campusDomain
+    -AccountStatus status
+    -Role role
+  }
+
+  class Profile {
+    -Long userId
+    -String displayName
+    -String bio
+    -String avatarUrl
+    -Visibility visibility
+  }
+
+  class Connection {
+    -Long id
+    -Long userAId
+    -Long userBId
+    -Instant createdAt
+  }
+
+  class ConnectionRequest {
+    -Long id
+    -Long fromUserId
+    -Long toUserId
+    -String message
+    -ConnectionRequestStatus status
+    -Instant createdAt
+  }
+
+  class Conversation {
+    -Long id
+    -Long userAId
+    -Long userBId
+    -Instant createdAt
+  }
+
+  class Message {
+    -Long id
+    -Long conversationId
+    -Long senderId
+    -String body
+    -Instant sentAt
+    -Instant readAt
+  }
+
+  class VerificationToken {
+    -Long id
+    -Long userId
+    -String token
+    -Instant expiresAt
+    -Boolean used
+  }
+
+  class School {
+    -Long id
+    -String domain
+    -String name
+  }
+
+  enum AccountStatus {
+    PENDING_VERIFICATION
+    ACTIVE
+    SUSPENDED
+  }
+
+  enum Role {
+    STUDENT
+    ADMIN
+  }
+
+  enum Visibility {
+    PUBLIC
+    CONNECTIONS_ONLY
+    PRIVATE
+  }
+
+  enum ConnectionRequestStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+  }
+}
+
+' ========================================
+' REPOSITORY LAYER - Repository Pattern
+' ========================================
+package "Repository Layer" <<REPOSITORY_COLOR>> {
+  interface JpaRepository<T,ID> {
+    +save(entity: T): T
+    +findById(id: ID): Optional<T>
+    +findAll(): List<T>
+    +delete(entity: T): void
+  }
+
+  interface UserRepository {
+    +findByEmail(email: String): Optional<User>
+    +findByCampusDomainAndStatus(domain: String, status: AccountStatus): List<User>
+  }
+
+  interface ProfileRepository {
+    +findByUserId(userId: Long): Optional<Profile>
+  }
+
+  interface ConnectionRepository {
+    +existsByUserAIdAndUserBId(a: Long, b: Long): boolean
+    +findByUserAIdOrUserBId(a: Long, b: Long): List<Connection>
+  }
+
+  interface ConnectionRequestRepository {
+    +findByToUserId(userId: Long): List<ConnectionRequest>
+    +findByFromUserId(userId: Long): List<ConnectionRequest>
+  }
+
+  interface ConversationRepository {
+    +findByUserAIdAndUserBId(a: Long, b: Long): Optional<Conversation>
+  }
+
+  interface MessageRepository {
+    +findByConversationIdOrderBySentAtAsc(conversationId: Long): List<Message>
+    +countUnreadInConversation(conversationId: Long, userId: Long): long
+    +markAsRead(conversationId: Long, userId: Long, time: Instant): int
+  }
+
+  interface VerificationTokenRepository {
+    +findByToken(token: String): Optional<VerificationToken>
+  }
+
+  interface SchoolRepository {
+    +findByDomain(domain: String): Optional<School>
+  }
+}
+
+JpaRepository <|-- UserRepository
+JpaRepository <|-- ProfileRepository
+JpaRepository <|-- ConnectionRepository
+JpaRepository <|-- ConnectionRequestRepository
+JpaRepository <|-- ConversationRepository
+JpaRepository <|-- MessageRepository
+JpaRepository <|-- VerificationTokenRepository
+JpaRepository <|-- SchoolRepository
+
+' ========================================
+' SERVICE LAYER
+' ========================================
+package "Service Layer" <<SERVICE_COLOR>> {
+  class AuthService {
+    -UserRepository users
+    -VerificationTokenRepository tokens
+    -PasswordEncoder encoder
+    -TokenService tokenService
+    -EmailService emailService
+    -JwtService jwtService
+    +signup(request: SignupRequest): AuthResponse
+    +verifyEmail(request: VerifyEmailRequest): void
+    +login(request: LoginRequest): AuthResponse
+    +resendVerification(request: ResendVerificationRequest): void
+  }
+
+  class ProfileService {
+    -ProfileRepository profiles
+    -UserRepository users
+    -MediaStorageService mediaStorage
+    +getProfile(userId: Long, viewerId: Long): ProfileResponse
+    +updateProfile(userId: Long, request: ProfileUpdateRequest): ProfileResponse
+    +uploadAvatar(userId: Long, file: MultipartFile): String
+  }
+
+  class ConnectionService {
+    -ConnectionRepository connections
+    -ConnectionRequestRepository requests
+    -UserRepository users
+    -NotificationService notifications
+    +sendRequest(fromId: Long, toId: Long): void
+    +acceptRequest(requestId: Long, userId: Long): void
+    +rejectRequest(requestId: Long, userId: Long): void
+    +getConnections(userId: Long): List<UserDto>
+  }
+
+  class MessagingService {
+    -ConversationRepository conversations
+    -MessageRepository messages
+    -ConnectionRepository connections
+    -UserRepository users
+    -ConversationHelper conversationHelper
+    +sendMessage(senderId: Long, request: SendMessageRequest): MessageDto
+    +getConversation(userId: Long, otherUserId: Long): ConversationResponse
+    +getUnreadCounts(userId: Long, friendIds: List<Long>): Map<Long,Long>
+    +markConversationAsRead(userId: Long, otherUserId: Long): void
+  }
+
+  class EmailService {
+    -EmailDeliveryStrategy deliveryStrategy
+    -String frontendUrl
+    +sendVerificationEmail(toAddress: String, token: String): void
+    +sendNotificationEmail(toAddress: String, body: String): void
+  }
+
+  class MediaStorageService {
+    -MediaStorageStrategy storageStrategy
+    +storeAvatar(file: MultipartFile, userId: Long): String
+    +deleteFile(fileUrl: String): boolean
+  }
+
+  class SearchService {
+    -IndexService indexService
+    -ProfileRepository profiles
+    +search(campusDomain: String, query: String): List<SearchResultDto>
+  }
+
+  class NotificationService {
+    -EmailService emailService
+    +notifyConnectionRequest(userId: Long): void
+    +notifyNewMessage(userId: Long): void
+  }
+
+  class TokenService {
+    -VerificationTokenRepository tokens
+    -UserRepository users
+    +generateVerificationToken(userId: Long): String
+    +validateVerificationToken(token: String): boolean
+    +markUserActive(token: String): void
+  }
+
+  class JwtService {
+    -String secretKey
+    -long expirationMs
+    +issueToken(userId: Long, campusDomain: String): String
+    +validateToken(token: String): boolean
+    +extractUserId(token: String): Long
+    +extractCampusDomain(token: String): String
+  }
+
+  class IndexService {
+    +indexProfile(profile: Profile): void
+    +removeProfile(userId: Long): void
+  }
+
+  class ConversationHelper {
+    -ConversationRepository conversations
+    +findOrCreateConversation(userAId: Long, userBId: Long): Conversation
+  }
+
+  class DeliveryService {
+    +deliverMessageViaWebSocket(recipientId: Long, message: MessageDto): void
+  }
+}
+
+' ========================================
+' CONTROLLER LAYER - MVC Pattern
+' ========================================
+package "Controller Layer" <<CONTROLLER_COLOR>> {
+  class AuthController {
+    -AuthService authService
+    -TokenService tokenService
+    +signup(request: SignupRequest): ResponseEntity<AuthResponse>
+    +verifyEmail(request: VerifyEmailRequest): ResponseEntity<Void>
+    +login(request: LoginRequest): ResponseEntity<AuthResponse>
+    +resend(request: ResendVerificationRequest): ResponseEntity<Void>
+  }
+
+  class ProfileController {
+    -ProfileService profileService
+    +getProfile(userId: Long): ResponseEntity<ProfileResponse>
+    +updateProfile(request: ProfileUpdateRequest): ResponseEntity<ProfileResponse>
+    +uploadAvatar(file: MultipartFile): ResponseEntity<String>
+  }
+
+  class ConnectionController {
+    -ConnectionService connectionService
+    +sendRequest(request: SendConnectionRequestDto): ResponseEntity<Void>
+    +respondToRequest(requestId: Long, action: String): ResponseEntity<Void>
+    +getConnections(): ResponseEntity<List<UserDto>>
+    +getRequests(): ResponseEntity<List<ConnectionRequestDto>>
+  }
+
+  class MessagingController {
+    -MessagingService messagingService
+    +sendMessage(request: SendMessageRequest): ResponseEntity<MessageDto>
+    +getConversation(otherUserId: Long): ResponseEntity<ConversationResponse>
+    +markAsRead(otherUserId: Long): ResponseEntity<Void>
+  }
+
+  class SearchController {
+    -SearchService searchService
+    +search(request: SearchRequest): ResponseEntity<List<SearchResultDto>>
+  }
+}
+
+' ========================================
+' STRATEGY PATTERN - Email Delivery
+' ========================================
+package "Email Strategy" <<STRATEGY_COLOR>> {
+  interface EmailDeliveryStrategy <<Strategy Pattern>> {
+    +send(message: EmailMessage): void
+    +isAvailable(): boolean
+  }
+
+  class SmtpEmailDeliveryStrategy {
+    -JavaMailSender mailSender
+    -String fromAddress
+    +send(message: EmailMessage): void
+    +isAvailable(): boolean
+  }
+
+  class LoggingEmailDeliveryStrategy {
+    +send(message: EmailMessage): void
+    +isAvailable(): boolean
+  }
+
+  class EmailMessage {
+    -String to
+    -String subject
+    -String body
+    -boolean html
+  }
+}
+
+EmailDeliveryStrategy <|.. SmtpEmailDeliveryStrategy
+EmailDeliveryStrategy <|.. LoggingEmailDeliveryStrategy
+EmailService --> EmailDeliveryStrategy : uses
+
+' ========================================
+' STRATEGY PATTERN - Media Storage
+' ========================================
+package "Media Strategy" <<STRATEGY_COLOR>> {
+  interface MediaStorageStrategy <<Strategy Pattern>> {
+    +store(file: MultipartFile, userId: Long, context: StorageContext): String
+    +delete(fileUrl: String): boolean
+    +initialize(): void
+    +validateFile(file: MultipartFile, context: StorageContext): void
+  }
+
+  class LocalFileStorageStrategy {
+    -String uploadDir
+    -String baseUrl
+    +store(file: MultipartFile, userId: Long, context: StorageContext): String
+    +delete(fileUrl: String): boolean
+    +initialize(): void
+  }
+
+  class StorageContext {
+    -Set<String> allowedContentTypes
+    -Long maxSizeBytes
+    +avatar(): StorageContext
+  }
+
+  class StorageException {
+    -String message
+  }
+}
+
+MediaStorageStrategy <|.. LocalFileStorageStrategy
+MediaStorageService --> MediaStorageStrategy : uses
+
+' ========================================
+' FACTORY PATTERN
+' ========================================
+package "Factory Pattern" <<FACTORY_COLOR>> {
+  class ErrorResponseFactory <<Factory Pattern>> {
+    +createErrorResponse(exception: Exception, path: String): ErrorResponse
+    -createValidationError(code: String, msg: String, path: String): ErrorResponse
+    -createAuthError(code: String, msg: String, path: String): ErrorResponse
+    -createConflictError(code: String, msg: String, path: String): ErrorResponse
+    -createNotFoundError(code: String, msg: String, path: String): ErrorResponse
+    -createInternalError(code: String, msg: String, path: String): ErrorResponse
+  }
+
+  class UserDtoMapper <<Factory Pattern>> {
+    +toDto(user: User, profile: Profile): UserDto
+    +toDtoList(users: List<User>, profileMap: Map<Long,Profile>): List<UserDto>
+  }
+
+  class ErrorResponse {
+    -String errorCode
+    -String message
+    -String path
+    -Map<String,Object> details
+    -Instant timestamp
+  }
+
+  class UserDto {
+    -Long id
+    -String displayName
+    -String avatarUrl
+    -String visibility
+    -String campusDomain
+  }
+}
+
+ErrorResponseFactory ..> ErrorResponse : creates
+UserDtoMapper ..> UserDto : creates
+
+' ========================================
+' FILTER CHAIN PATTERN
+' ========================================
+package "Security & Filters" <<FILTER_COLOR>> {
+  interface Filter <<Filter Chain Pattern>> {
+    +doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain): void
+  }
+
+  class OncePerRequestFilter {
+    +doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, chain: FilterChain): void
+  }
+
+  class JwtAuthFilter {
+    -JwtService jwtService
+    +doFilterInternal(request, response, chain): void
+    #shouldNotFilter(request: HttpServletRequest): boolean
+  }
+
+  class RateLimitingFilter {
+    +doFilter(request, response, chain): void
+  }
+
+  class RequestLoggingFilter {
+    +doFilter(request, response, chain): void
+  }
+
+  class AuthenticatedUser {
+    -Long userId
+    -String campusDomain
+  }
+}
+
+Filter <|.. OncePerRequestFilter
+OncePerRequestFilter <|-- JwtAuthFilter
+Filter <|.. RateLimitingFilter
+Filter <|.. RequestLoggingFilter
+JwtAuthFilter --> JwtService : uses
+JwtAuthFilter ..> AuthenticatedUser : creates
+
+' ========================================
+' CONFIGURATION
+' ========================================
+package "Configuration" {
+  class SecurityConfig {
+    +securityFilterChain(http: HttpSecurity): SecurityFilterChain
+    +passwordEncoder(): BCryptPasswordEncoder
+  }
+
+  class WebConfig {
+    +corsConfigurer(): WebMvcConfigurer
+  }
+
+  class WebSocketConfig {
+    +configureMessageBroker(config: MessageBrokerRegistry): void
+    +registerStompEndpoints(registry: StompEndpointRegistry): void
+  }
+}
+
+' ========================================
+' EXCEPTION HIERARCHY
+' ========================================
+package "Exceptions" {
+  class RuntimeException
+
+  class EmailAlreadyInUseException
+  class InvalidEmailDomainException
+  class InvalidVerificationTokenException
+  class UnauthorizedException
+  class ForbiddenCampusAccessException
+  class ProfileVisibilityException
+  class ConnectionNotFoundException
+  class ConnectionAlreadyExistsException
+  class MessagingNotAllowedException
+  class MessagePermissionException
+  class EmailDeliveryException
+
+  RuntimeException <|-- EmailAlreadyInUseException
+  RuntimeException <|-- InvalidEmailDomainException
+  RuntimeException <|-- InvalidVerificationTokenException
+  RuntimeException <|-- UnauthorizedException
+  RuntimeException <|-- ForbiddenCampusAccessException
+  RuntimeException <|-- ProfileVisibilityException
+  RuntimeException <|-- ConnectionNotFoundException
+  RuntimeException <|-- ConnectionAlreadyExistsException
+  RuntimeException <|-- MessagingNotAllowedException
+  RuntimeException <|-- MessagePermissionException
+  RuntimeException <|-- EmailDeliveryException
+}
+
+' ========================================
+' ERROR HANDLING
+' ========================================
+package "Error Handling" {
+  class ErrorHandler {
+    -ErrorResponseFactory errorResponseFactory
+    +handleException(ex: Exception, request: WebRequest): ResponseEntity<ErrorResponse>
+  }
+}
+
+ErrorHandler --> ErrorResponseFactory : uses
+
+' ========================================
+' RELATIONSHIPS
+' ========================================
+
+' Controllers -> Services
+AuthController --> AuthService
+ProfileController --> ProfileService
+ConnectionController --> ConnectionService
+MessagingController --> MessagingService
+SearchController --> SearchService
+
+' Services -> Repositories
+AuthService --> UserRepository
+AuthService --> VerificationTokenRepository
+AuthService --> TokenService
+AuthService --> EmailService
+AuthService --> JwtService
+
+ProfileService --> ProfileRepository
+ProfileService --> UserRepository
+ProfileService --> MediaStorageService
+
+ConnectionService --> ConnectionRepository
+ConnectionService --> ConnectionRequestRepository
+ConnectionService --> UserRepository
+ConnectionService --> NotificationService
+
+MessagingService --> ConversationRepository
+MessagingService --> MessageRepository
+MessagingService --> ConnectionRepository
+MessagingService --> UserRepository
+MessagingService --> ConversationHelper
+
+SearchService --> IndexService
+SearchService --> ProfileRepository
+
+NotificationService --> EmailService
+
+' Repositories -> Domain
+UserRepository ..> User : manages
+ProfileRepository ..> Profile : manages
+ConnectionRepository ..> Connection : manages
+ConnectionRequestRepository ..> ConnectionRequest : manages
+ConversationRepository ..> Conversation : manages
+MessageRepository ..> Message : manages
+VerificationTokenRepository ..> VerificationToken : manages
+SchoolRepository ..> School : manages
+
+' Domain Relationships
+User "1" -- "0..1" Profile : has
+User "1" -- "*" VerificationToken : has
+User "*" -- "1" School : belongs to
+Connection "*" -- "2" User : connects
+ConnectionRequest "*" -- "2" User : from/to
+Conversation "*" -- "2" User : between
+Message "*" -- "1" Conversation : in
+Message "*" -- "1" User : sent by
+
+note right of EmailDeliveryStrategy
+  <b>Strategy Pattern</b>
+  Allows swapping email providers
+  (SMTP, SendGrid, SES) without
+  changing business logic
+end note
+
+note right of MediaStorageStrategy
+  <b>Strategy Pattern</b>
+  Enables switching storage backends
+  (Local, S3, CDN) dynamically
+end note
+
+note right of ErrorResponseFactory
+  <b>Factory Pattern</b>
+  Centralizes error response creation
+  Ensures consistent error formatting
+end note
+
+note right of UserRepository
+  <b>Repository Pattern</b>
+  Abstracts data access layer
+  Provides clean separation from
+  domain logic
+end note
+
+note right of JwtAuthFilter
+  <b>Filter Chain Pattern</b>
+  Request preprocessing pipeline
+  Authentication, rate limiting,
+  logging in sequence
+end note
+
+note bottom of AuthController
+  <b>MVC Pattern</b>
+  Controllers handle HTTP requests
+  Services contain business logic
+  Repositories manage data access
+end note
+
+@enduml
