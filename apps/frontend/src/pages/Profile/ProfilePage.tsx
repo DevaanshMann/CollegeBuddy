@@ -1,569 +1,475 @@
-import { useEffect, useState } from "react";
-import type { FormEvent, ChangeEvent } from "react";
-import { apiClient } from "../../api/client";
-import { JWT_STORAGE_KEY, API_BASE_URL } from "../../config";
+import { useEffect, useState } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
+import { Settings, Upload, Camera, Globe, Lock } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { apiClient } from '../../api/client';
+import { API_BASE_URL } from '../../config';
+import { Avatar, Button, Input, TextArea } from '../../components/ui';
+import toast from 'react-hot-toast';
 
 type ProfileDto = {
-    displayName: string;
-    bio: string;
-    avatarUrl: string;
-    visibility: string;
+  displayName: string;
+  bio: string;
+  avatarUrl: string;
+  visibility: string;
 };
 
 const emptyProfile: ProfileDto = {
-    displayName: "",
-    bio: "",
-    avatarUrl: "",
-    visibility: "PUBLIC",
+  displayName: '',
+  bio: '',
+  avatarUrl: '',
+  visibility: 'PUBLIC',
 };
 
 export function ProfilePage() {
-    const [profile, setProfile] = useState<ProfileDto>(emptyProfile);
-    const [editedProfile, setEditedProfile] = useState<ProfileDto>(emptyProfile);
-    const [isEditing, setIsEditing] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [status, setStatus] = useState<string | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<ProfileDto>(emptyProfile);
+  const [editedProfile, setEditedProfile] = useState<ProfileDto>(emptyProfile);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [connectionsCount, setConnectionsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
-    // Helper to get full image URL
-    const getAvatarUrl = (url: string | null | undefined): string | null => {
-        if (!url) return null;
+  useEffect(() => {
+    void loadProfile();
+    void loadConnectionStats();
+  }, []);
 
-        console.log("Processing avatar URL:", url); // Debug
+  const getAvatarUrl = (url: string | null | undefined): string | undefined => {
+    if (!url) return undefined;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/')) {
+      return `${API_BASE_URL}${url}`;
+    }
+    return url;
+  };
 
-        // If it's already a full URL, return as-is
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            return url;
-        }
+  async function loadProfile() {
+    setLoading(true);
 
-        // If it's a relative path, prepend the API base URL
-        if (url.startsWith('/')) {
-            const fullUrl = `${API_BASE_URL}${url}`;
-            console.log("Converted to full URL:", fullUrl); // Debug
-            return fullUrl;
-        }
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
-        return url;
+    try {
+      const data = await apiClient.get<ProfileDto>(`/profile/${user.id}`);
+      setProfile(data);
+      setEditedProfile(data);
+    } catch (err) {
+      console.warn('Profile not found, showing empty profile');
+      setProfile(emptyProfile);
+      setEditedProfile(emptyProfile);
+      setIsEditing(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadConnectionStats() {
+    try {
+      const connectionsData = await apiClient.get<{
+        friends: any[];
+        incomingRequests: any[];
+        outgoingRequests: any[];
+      }>('/connections');
+
+      setConnectionsCount(connectionsData.friends.length);
+      setPendingRequestsCount(connectionsData.incomingRequests.length);
+    } catch (error) {
+      console.error('Failed to load connection stats:', error);
+    }
+  }
+
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setSelectedFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
     };
+    reader.readAsDataURL(file);
+  }
 
-    // Decode JWT to get user ID
-    const getUserIdFromToken = () => {
-        const token = localStorage.getItem(JWT_STORAGE_KEY);
-        if (!token) return null;
+  async function handleUploadAvatar() {
+    if (!selectedFile) return;
 
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.sub;
-        } catch (e) {
-            console.error("Failed to decode token:", e);
-            return null;
-        }
-    };
+    setUploading(true);
 
-    useEffect(() => {
-        void loadProfile();
-    }, []);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
 
-    async function loadProfile() {
-        setLoading(true);
-        setError(null);
-        setStatus(null);
+      const token = localStorage.getItem('collegebuddy_jwt');
+      const response = await fetch(`${API_BASE_URL}/profile/upload-avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
-        const userId = getUserIdFromToken();
-        if (!userId) {
-            setError("Not authenticated");
-            setLoading(false);
-            return;
-        }
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
 
-        try {
-            const data = await apiClient.get<ProfileDto>(`/profile/${userId}`);
-            console.log("Loaded profile:", data); // Debug
-            setProfile(data);
-            setEditedProfile(data);
-        } catch (err: any) {
-            console.warn("Profile not found, showing empty profile:", err);
-            setProfile(emptyProfile);
-            setEditedProfile(emptyProfile);
-            setIsEditing(true);
-        } finally {
-            setLoading(false);
-        }
+      const data = await response.json();
+      const avatarUrl = data.avatarUrl;
+
+      setEditedProfile({ ...editedProfile, avatarUrl });
+      setProfile({ ...profile, avatarUrl });
+
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      toast.success('Avatar uploaded! Click "Save Profile" to confirm.');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      toast.error(err.message ?? 'Failed to upload avatar');
+    } finally {
+      setUploading(false);
     }
+  }
 
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  async function handleSave(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
 
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            setError("Please select an image file");
-            return;
-        }
-
-        // Validate file size (5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setError("File size must be less than 5MB");
-            return;
-        }
-
-        setSelectedFile(file);
-
-        // Create preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setPreviewUrl(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        setError(null);
+    try {
+      await apiClient.put('/profile', editedProfile);
+      setProfile(editedProfile);
+      setIsEditing(false);
+      toast.success('Profile saved successfully!');
+      await loadProfile(); // Reload to get latest data
+    } catch (err: any) {
+      console.error('Save profile error:', err);
+      toast.error(err.message ?? 'Failed to save profile');
+    } finally {
+      setSaving(false);
     }
+  }
 
-    async function handleUploadAvatar() {
-        if (!selectedFile) return;
+  function handleEdit() {
+    setEditedProfile(profile);
+    setIsEditing(true);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  }
 
-        setUploading(true);
-        setError(null);
+  function handleCancel() {
+    setEditedProfile(profile);
+    setIsEditing(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  }
 
-        try {
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-
-            const token = localStorage.getItem(JWT_STORAGE_KEY);
-            const response = await fetch(`${API_BASE_URL}/profile/upload-avatar`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Upload failed:", errorText);
-                throw new Error(`Upload failed: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Upload response from backend:", data);
-
-            // Backend returns relative path like /uploads/avatars/123_abc.jpg
-            // Store ONLY the relative path (NOT the full URL)
-            const avatarUrl = data.avatarUrl;
-            console.log("Storing relative avatar URL:", avatarUrl);
-
-            // Update the edited profile with the relative path
-            setEditedProfile({ ...editedProfile, avatarUrl: avatarUrl });
-
-            // Also update the main profile so preview works
-            setProfile({ ...profile, avatarUrl: avatarUrl });
-
-            setSelectedFile(null);
-            setPreviewUrl(null);
-            setStatus("Avatar uploaded successfully! Click 'Update Profile' to save.");
-        } catch (err: any) {
-            console.error("Upload error:", err);
-            setError(err.message ?? "Failed to upload avatar");
-        } finally {
-            setUploading(false);
-        }
-    }
-
-    async function handleSave(e: FormEvent) {
-        e.preventDefault();
-        setSaving(true);
-        setError(null);
-        setStatus(null);
-
-        try {
-            console.log("Saving profile with avatar URL:", editedProfile.avatarUrl); // Debug
-            await apiClient.put("/profile", editedProfile);
-            setProfile(editedProfile);
-            setIsEditing(false);
-            setStatus("Profile saved successfully!");
-        } catch (err: any) {
-            console.error("Save profile error:", err);
-            setError(err.message ?? "Failed to save profile");
-        } finally {
-            setSaving(false);
-        }
-    }
-
-    function handleEdit() {
-        setEditedProfile(profile);
-        setIsEditing(true);
-        setError(null);
-        setStatus(null);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-    }
-
-    function handleCancel() {
-        setEditedProfile(profile);
-        setIsEditing(false);
-        setError(null);
-        setStatus(null);
-        setSelectedFile(null);
-        setPreviewUrl(null);
-    }
-
-    if (loading) {
-        return (
-            <div style={{ textAlign: "center", padding: "2rem" }}>
-                <p>Loading profile...</p>
-            </div>
-        );
-    }
-
-    // View Mode
-    if (!isEditing) {
-        const avatarUrl = profile.avatarUrl
-            ? (profile.avatarUrl.startsWith('http')
-                ? profile.avatarUrl
-                : `${API_BASE_URL}${profile.avatarUrl}`)
-            : null;
-
-        console.log("=== VIEW MODE DEBUG ===");
-        console.log("Raw avatarUrl from profile:", profile.avatarUrl);
-        console.log("Computed full avatarUrl:", avatarUrl);
-        console.log("API_BASE_URL:", API_BASE_URL);
-
-        return (
-            <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-                    <h2>Your Profile</h2>
-                    <button onClick={handleEdit} style={{ padding: "0.5rem 1rem" }}>
-                        Edit Profile
-                    </button>
-                </div>
-
-                {status && <p style={{ color: "#22c55e", marginBottom: "1rem" }}>{status}</p>}
-
-                <div style={{
-                    border: "1px solid #ddd",
-                    borderRadius: "8px",
-                    padding: "2rem",
-                    backgroundColor: "#f9f9f9"
-                }}>
-                    {/* AVATAR SECTION - MUST ALWAYS SHOW */}
-                    <div style={{
-                        textAlign: "center",
-                        marginBottom: "2rem",
-                        padding: "1rem",
-                        backgroundColor: "#fff",
-                        borderRadius: "8px"
-                    }}>
-                        {avatarUrl ? (
-                            <div>
-                                <img
-                                    src={avatarUrl}
-                                    alt="Profile avatar"
-                                    crossOrigin="anonymous"  // Add this line
-                                    style={{
-                                        width: "120px",
-                                        height: "120px",
-                                        borderRadius: "50%",
-                                        objectFit: "cover",
-                                        border: "3px solid #007bff",
-                                        display: "block",
-                                        margin: "0 auto"
-                                    }}
-                                    onLoad={() => console.log("✅ Avatar loaded successfully!")}
-                                    onError={(e) => {
-                                        console.error("❌ Avatar failed to load from:", avatarUrl);
-                                        e.currentTarget.style.display = 'none';
-                                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                                        if (fallback) fallback.style.display = 'flex';
-                                    }}
-                                />
-                                {/* Fallback avatar (hidden by default, shown on error) */}
-                                <div
-                                    style={{
-                                        width: "120px",
-                                        height: "120px",
-                                        borderRadius: "50%",
-                                        backgroundColor: "#007bff",
-                                        color: "white",
-                                        display: "none",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: "3rem",
-                                        fontWeight: "bold",
-                                        margin: "0 auto"
-                                    }}
-                                >
-                                    {profile.displayName?.charAt(0).toUpperCase() || "?"}
-                                </div>
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    width: "120px",
-                                    height: "120px",
-                                    borderRadius: "50%",
-                                    backgroundColor: "#007bff",
-                                    color: "white",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontSize: "3rem",
-                                    fontWeight: "bold",
-                                    margin: "0 auto"
-                                }}
-                            >
-                                {profile.displayName?.charAt(0).toUpperCase() || "?"}
-                            </div>
-                        )}
-                        <p style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#666" }}>
-                            {avatarUrl ? "Profile Picture" : "No profile picture"}
-                        </p>
-                    </div>
-
-                    <div style={{ marginBottom: "1.5rem" }}>
-                        <label style={{ fontWeight: "bold", color: "#666", fontSize: "0.9rem" }}>
-                            Display Name
-                        </label>
-                        <p style={{ fontSize: "1.5rem", margin: "0.25rem 0 0 0" }}>
-                            {profile.displayName || <em style={{ color: "#999" }}>Not set</em>}
-                        </p>
-                    </div>
-
-                    <div style={{ marginBottom: "1.5rem" }}>
-                        <label style={{ fontWeight: "bold", color: "#666", fontSize: "0.9rem" }}>
-                            Bio
-                        </label>
-                        <p style={{ margin: "0.25rem 0 0 0", lineHeight: "1.6" }}>
-                            {profile.bio || <em style={{ color: "#999" }}>No bio added</em>}
-                        </p>
-                    </div>
-
-                    <div style={{ marginBottom: "1.5rem" }}>
-                        <label style={{ fontWeight: "bold", color: "#666", fontSize: "0.9rem" }}>
-                            Visibility
-                        </label>
-                        <p style={{ margin: "0.25rem 0 0 0" }}>
-                        <span style={{
-                            display: "inline-block",
-                            padding: "0.25rem 0.75rem",
-                            borderRadius: "12px",
-                            backgroundColor: profile.visibility === "PUBLIC" ? "#e3f2fd" : "#fff3cd",
-                            color: profile.visibility === "PUBLIC" ? "#1976d2" : "#856404",
-                            fontSize: "0.9rem"
-                        }}>
-                            {profile.visibility === "PUBLIC" ? "🌍 Public (visible to campus)" : "🔒 Private (only me)"}
-                        </span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Edit Mode
-    const editAvatarUrl = getAvatarUrl(editedProfile.avatarUrl);
-
+  if (loading) {
     return (
-        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
-            <h2>Edit Your Profile</h2>
-            <p style={{ marginBottom: "2rem", color: "#666" }}>
-                Update your information below. Changes will be visible to other students based on your visibility settings.
-            </p>
-
-            {status && <p style={{ color: "#22c55e", marginBottom: "1rem" }}>{status}</p>}
-            {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
-
-            <form
-                onSubmit={handleSave}
-                style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}
-            >
-                {/* Avatar Upload Section */}
-                <div style={{
-                    border: "2px dashed #ddd",
-                    borderRadius: "8px",
-                    padding: "1.5rem",
-                    backgroundColor: "#f9f9f9"
-                }}>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
-                        Profile Picture
-                    </label>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", marginBottom: "1rem" }}>
-                        {/* Current/Preview Avatar */}
-                        <div>
-                            {previewUrl ? (
-                                <img
-                                    src={previewUrl}
-                                    alt="Avatar preview"
-                                    style={{
-                                        width: "80px",
-                                        height: "80px",
-                                        borderRadius: "50%",
-                                        objectFit: "cover",
-                                        border: "2px solid #007bff"
-                                    }}
-                                />
-                            ) : editAvatarUrl ? (
-                                <img
-                                    src={editAvatarUrl}
-                                    alt="Current avatar"
-                                    crossOrigin="anonymous"
-                                    style={{
-                                        width: "80px",
-                                        height: "80px",
-                                        borderRadius: "50%",
-                                        objectFit: "cover",
-                                        border: "2px solid #007bff"
-                                    }}
-                                    onError={(e) => {
-                                        console.error("Failed to load avatar in edit mode from:", editAvatarUrl);
-                                        e.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                            ) : (
-                                <div
-                                    style={{
-                                        width: "80px",
-                                        height: "80px",
-                                        borderRadius: "50%",
-                                        backgroundColor: "#007bff",
-                                        color: "white",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: "2rem",
-                                        fontWeight: "bold"
-                                    }}
-                                >
-                                    {editedProfile.displayName?.charAt(0).toUpperCase() || "?"}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Upload Controls */}
-                        <div style={{ flex: 1 }}>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleFileChange}
-                                style={{ marginBottom: "0.5rem" }}
-                            />
-                            {selectedFile && (
-                                <button
-                                    type="button"
-                                    onClick={handleUploadAvatar}
-                                    disabled={uploading}
-                                    style={{
-                                        padding: "0.5rem 1rem",
-                                        backgroundColor: "#28a745",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "4px",
-                                        cursor: uploading ? "not-allowed" : "pointer",
-                                        opacity: uploading ? 0.6 : 1
-                                    }}
-                                >
-                                    {uploading ? "Uploading..." : "Upload Avatar"}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    <small style={{ color: "#666", fontSize: "0.85rem" }}>
-                        Accepted: JPG, PNG, GIF (max 5MB)
-                    </small>
-                </div>
-
-                <div>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
-                        Display Name *
-                    </label>
-                    <input
-                        type="text"
-                        value={editedProfile.displayName}
-                        onChange={(e) => setEditedProfile({ ...editedProfile, displayName: e.target.value })}
-                        required
-                        placeholder="Enter your display name"
-                        style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
-                    />
-                </div>
-
-                <div>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
-                        Bio
-                    </label>
-                    <textarea
-                        rows={4}
-                        value={editedProfile.bio}
-                        onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
-                        placeholder="Tell others about yourself..."
-                        style={{ width: "100%", padding: "0.75rem", fontSize: "1rem", resize: "vertical" }}
-                    />
-                    <small style={{ color: "#666", fontSize: "0.85rem" }}>
-                        {editedProfile.bio?.length || 0} / 500 characters
-                    </small>
-                </div>
-
-                <div>
-                    <label style={{ fontWeight: "bold", display: "block", marginBottom: "0.5rem" }}>
-                        Visibility
-                    </label>
-                    <select
-                        value={editedProfile.visibility}
-                        onChange={(e) => setEditedProfile({ ...editedProfile, visibility: e.target.value })}
-                        style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
-                    >
-                        <option value="PUBLIC">🌍 Public (visible to your campus)</option>
-                        <option value="PRIVATE">🔒 Private (only visible to you)</option>
-                    </select>
-                    <small style={{ color: "#666", fontSize: "0.85rem", display: "block", marginTop: "0.5rem" }}>
-                        {editedProfile.visibility === "PUBLIC"
-                            ? "Other students at your campus can find and view your profile"
-                            : "Your profile will be hidden from search results"}
-                    </small>
-                </div>
-
-                <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        style={{
-                            flex: 1,
-                            padding: "0.75rem",
-                            backgroundColor: "#007bff",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "1rem",
-                            cursor: saving ? "not-allowed" : "pointer",
-                            opacity: saving ? 0.6 : 1
-                        }}
-                    >
-                        {saving ? "Saving..." : "Update Profile"}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={saving}
-                        style={{
-                            flex: 1,
-                            padding: "0.75rem",
-                            backgroundColor: "#6c757d",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "1rem",
-                            cursor: saving ? "not-allowed" : "pointer",
-                            opacity: saving ? 0.6 : 1
-                        }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
     );
+  }
+
+  const avatarUrl = getAvatarUrl(profile.avatarUrl);
+
+  // View Mode - Instagram Style
+  if (!isEditing) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Profile Header */}
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start md:items-center mb-8">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            <Avatar
+              src={avatarUrl}
+              alt={profile.displayName}
+              size="xl"
+              fallback={profile.displayName}
+              className="w-32 h-32 md:w-40 md:h-40 border-4 border-gray-200 dark:border-gray-700"
+            />
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 w-full">
+            {/* Username & Edit Button */}
+            <div className="flex items-center gap-4 mb-6">
+              <h1 className="text-2xl font-light text-light-text-primary dark:text-dark-text-primary">
+                {profile.displayName || 'No name set'}
+              </h1>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleEdit}
+                className="gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Edit Profile
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-8 mb-6">
+              <div className="text-center md:text-left">
+                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+                  {connectionsCount}
+                </span>
+                <span className="text-light-text-secondary dark:text-dark-text-secondary ml-1">
+                  connections
+                </span>
+              </div>
+              <div className="text-center md:text-left">
+                <span className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+                  {pendingRequestsCount}
+                </span>
+                <span className="text-light-text-secondary dark:text-dark-text-secondary ml-1">
+                  pending
+                </span>
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div className="space-y-1">
+              <p className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+                {user?.displayName}
+              </p>
+              {profile.bio && (
+                <p className="text-sm text-light-text-primary dark:text-dark-text-primary whitespace-pre-wrap">
+                  {profile.bio}
+                </p>
+              )}
+              <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary flex items-center gap-1">
+                {profile.visibility === 'PUBLIC' ? (
+                  <>
+                    <Globe className="w-3 h-3" />
+                    Public Profile
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3 h-3" />
+                    Private Profile
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="divider mb-8" />
+
+        {/* Additional Info Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="card p-6">
+            <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
+              Campus
+            </h3>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+              @{user?.campusDomain}
+            </p>
+          </div>
+          <div className="card p-6">
+            <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
+              Account Status
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+              <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                Active
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Edit Mode
+  const editAvatarUrl = previewUrl || getAvatarUrl(editedProfile.avatarUrl);
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">
+          Edit Profile
+        </h2>
+        <p className="text-light-text-secondary dark:text-dark-text-secondary">
+          Update your profile information and settings
+        </p>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* Avatar Section */}
+        <div className="card p-6">
+          <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-4">
+            Profile Picture
+          </h3>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <Avatar
+              src={editAvatarUrl}
+              alt={editedProfile.displayName}
+              size="xl"
+              fallback={editedProfile.displayName}
+              className="w-24 h-24"
+            />
+            <div className="flex-1 space-y-3">
+              <div className="relative">
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="btn-secondary cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Choose Photo
+                </label>
+              </div>
+              {selectedFile && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={handleUploadAvatar}
+                  loading={uploading}
+                  className="gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Avatar
+                </Button>
+              )}
+              <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                JPG, PNG or GIF (max 5MB)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Info */}
+        <div className="card p-6 space-y-4">
+          <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
+            Profile Information
+          </h3>
+
+          <Input
+            label="Display Name"
+            value={editedProfile.displayName}
+            onChange={(value) =>
+              setEditedProfile({ ...editedProfile, displayName: value })
+            }
+            required
+            placeholder="Enter your display name"
+          />
+
+          <TextArea
+            label="Bio"
+            value={editedProfile.bio}
+            onChange={(value) =>
+              setEditedProfile({ ...editedProfile, bio: value })
+            }
+            placeholder="Tell others about yourself..."
+            rows={4}
+            maxLength={500}
+            showCount
+          />
+        </div>
+
+        {/* Privacy Settings */}
+        <div className="card p-6">
+          <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-4">
+            Privacy Settings
+          </h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-4 bg-light-surface dark:bg-dark-bg rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <input
+                type="radio"
+                name="visibility"
+                value="PUBLIC"
+                checked={editedProfile.visibility === 'PUBLIC'}
+                onChange={(e) =>
+                  setEditedProfile({
+                    ...editedProfile,
+                    visibility: e.target.value,
+                  })
+                }
+                className="w-4 h-4 text-blue-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 font-medium text-light-text-primary dark:text-dark-text-primary">
+                  <Globe className="w-4 h-4" />
+                  Public Profile
+                </div>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                  Your profile will be visible to all students at your campus
+                </p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-4 bg-light-surface dark:bg-dark-bg rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <input
+                type="radio"
+                name="visibility"
+                value="PRIVATE"
+                checked={editedProfile.visibility === 'PRIVATE'}
+                onChange={(e) =>
+                  setEditedProfile({
+                    ...editedProfile,
+                    visibility: e.target.value,
+                  })
+                }
+                className="w-4 h-4 text-blue-500"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 font-medium text-light-text-primary dark:text-dark-text-primary">
+                  <Lock className="w-4 h-4" />
+                  Private Profile
+                </div>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                  Only you can see your profile
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button type="submit" variant="primary" fullWidth loading={saving}>
+            Save Profile
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            onClick={handleCancel}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
 }

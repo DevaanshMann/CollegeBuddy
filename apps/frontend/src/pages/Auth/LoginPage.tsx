@@ -1,137 +1,107 @@
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { apiClient } from "../../api/client";
-import { JWT_STORAGE_KEY } from "../../config";
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api/client';
+import { Button, Input } from '../../components/ui';
+import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 type LoginResponse = {
-    status: string;
-    jwt: string;
+  status: string;
+  jwt: string;
 };
 
 export function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    async function handleSubmit(e: FormEvent) {
-        e.preventDefault();
-        setError(null);
-        setLoading(true);
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
 
-        try {
-            const res = await apiClient.post<LoginResponse>("/auth/login", {
-                email,
-                password,
-            });
+    try {
+      const res = await apiClient.post<LoginResponse>('/auth/login', {
+        email,
+        password,
+      });
 
-            if (res.jwt) {
-                localStorage.setItem(JWT_STORAGE_KEY, res.jwt);
+      if (res.jwt) {
+        // Decode JWT to get user data
+        const payload = JSON.parse(atob(res.jwt.split('.')[1]));
+        const userData = {
+          id: payload.sub,
+          email: payload.email || email,
+          displayName: payload.displayName || '',
+          campusDomain: payload.campusDomain || '',
+          profileVisibility: 'PUBLIC' as const
+        };
 
-                // Force a full page reload to update auth state
-                window.location.href = "/profile";
-            } else {
-                setError("Login failed - no token received");
-            }
-        } catch (err: any) {
-            console.error("Login error:", err);
-            setError(err.message ?? "Login failed");
-        } finally {
-            setLoading(false);
-        }
+        // Use AuthContext login function
+        login(res.jwt, userData);
+
+        // Navigate to home
+        navigate('/home');
+        toast.success('Welcome back!');
+      } else {
+        toast.error('Login failed - no token received');
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      toast.error(err.message ?? 'Login failed');
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "80vh",
-            padding: "1rem"
-        }}>
-            <h1 style={{
-                fontFamily: "'Pacifico', cursive",
-                fontSize: "3rem",
-                marginBottom: "1.5rem",
-                color: "#333"
-            }}>
-                CollegeBuddy
-            </h1>
-            <div style={{
-                backgroundColor: "#fff",
-                padding: "2rem",
-                borderRadius: "8px",
-                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
-                width: "100%",
-                maxWidth: "400px"
-            }}>
-                <h2 style={{ textAlign: "center", marginBottom: "1.5rem" }}>Login</h2>
+  return (
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 bg-light-bg dark:bg-dark-bg">
+      {/* Logo */}
+      <h1 className="text-5xl font-bold mb-8 text-blue-500" style={{ fontFamily: "'Pacifico', cursive" }}>
+        CollegeBuddy
+      </h1>
 
-                <form
-                    onSubmit={handleSubmit}
-                    style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
-                >
-                    <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, fontSize: "1.1rem" }}>
-                            Email (.edu)
-                        </label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            style={{
-                                width: "100%",
-                                padding: "0.75rem",
-                                borderRadius: "4px",
-                                border: "1px solid #ccc",
-                                boxSizing: "border-box",
-                                fontSize: "1.1rem"
-                            }}
-                        />
-                    </div>
+      {/* Login Card */}
+      <div className="card w-full max-w-md p-8">
+        <h2 className="text-2xl font-bold text-center mb-6 text-light-text-primary dark:text-dark-text-primary">
+          Log In
+        </h2>
 
-                    <div>
-                        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500, fontSize: "1.1rem" }}>
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            style={{
-                                width: "100%",
-                                padding: "0.75rem",
-                                borderRadius: "4px",
-                                border: "1px solid #ccc",
-                                boxSizing: "border-box",
-                                fontSize: "1.1rem"
-                            }}
-                        />
-                    </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            label="Email (.edu)"
+            value={email}
+            onChange={setEmail}
+            required
+            placeholder="your.email@university.edu"
+          />
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            padding: "0.75rem",
-                            backgroundColor: "#4a90d9",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: loading ? "not-allowed" : "pointer",
-                            fontWeight: 500,
-                            marginTop: "0.5rem"
-                        }}
-                    >
-                        {loading ? "Logging in..." : "Log in"}
-                    </button>
-                </form>
+          <Input
+            type="password"
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            required
+            placeholder="Enter your password"
+          />
 
-                {error && <p style={{ color: "red", marginTop: "1rem", textAlign: "center" }}>{error}</p>}
-            </div>
+          <Button type="submit" variant="primary" fullWidth loading={loading}>
+            Log In
+          </Button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-blue-500 hover:text-blue-600 font-semibold">
+              Sign up
+            </Link>
+          </p>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

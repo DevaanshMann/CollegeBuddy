@@ -1,53 +1,209 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Light mode colors */
+    --color-bg: 255 255 255;
+    --color-surface: 250 250 250;
+    --color-border: 219 219 219;
+    --color-text-primary: 38 38 38;
+    --color-text-secondary: 115 115 115;
+
+    /* Primary colors */
+    --color-primary-500: 59 130 246;
+    --color-primary-600: 37 99 235;
+  }
+
+  .dark {
+    /* Dark mode colors */
+    --color-bg: 0 0 0;
+    --color-surface: 38 38 38;
+    --color-border: 54 54 54;
+    --color-text-primary: 255 255 255;
+    --color-text-secondary: 168 168 168;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  html, body, #root {
+    @apply h-full;
+    background-color: rgb(var(--color-bg));
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  body {
+    @apply antialiased;
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-text-primary));
+    /* Instagram-like system font stack */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
 }
 
-html {
-    background-color: #ffffff;
+@layer components {
+  /* Backgrounds - use CSS variables that change with dark mode */
+  .bg-light-bg {
+    background-color: rgb(var(--color-bg)) !important;
+  }
+
+  .bg-light-surface {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
+  .dark\:bg-dark-bg {
+    background-color: rgb(var(--color-bg)) !important;
+  }
+
+  .dark\:bg-dark-surface {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
+  /* Borders */
+  .border-light-border {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .dark\:border-dark-border {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  /* Text colors */
+  .text-light-text-primary {
+    color: rgb(var(--color-text-primary)) !important;
+  }
+
+  .text-light-text-secondary {
+    color: rgb(var(--color-text-secondary)) !important;
+  }
+
+  .dark\:text-dark-text-primary {
+    color: rgb(var(--color-text-primary)) !important;
+  }
+
+  .dark\:text-dark-text-secondary {
+    color: rgb(var(--color-text-secondary)) !important;
+  }
+
+  /* Instagram-style button */
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply font-semibold py-2 px-4 rounded-lg transition-colors border;
+    background-color: rgb(var(--color-surface));
+    border-color: rgb(var(--color-border));
+    color: rgb(var(--color-text-primary));
+  }
+
+  .btn-secondary:hover {
+    filter: brightness(0.95);
+  }
+
+  .btn-ghost {
+    @apply font-semibold py-2 px-4 rounded-lg transition-colors;
+    color: rgb(var(--color-text-primary));
+  }
+
+  .btn-ghost:hover {
+    background-color: rgb(var(--color-surface));
+  }
+
+  /* Instagram-style input */
+  .input {
+    @apply w-full px-3 py-2 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors;
+    background-color: rgb(var(--color-surface));
+    border: 1px solid rgb(var(--color-border));
+    color: rgb(var(--color-text-primary));
+  }
+
+  .input::placeholder {
+    color: rgb(115 115 115 / 0.6);
+  }
+
+  .dark .input::placeholder {
+    color: rgb(168 168 168 / 0.6);
+  }
+
+  /* Card component */
+  .card {
+    @apply rounded-lg;
+    background-color: rgb(var(--color-surface));
+    border: 1px solid rgb(var(--color-border));
+  }
+
+  /* Navigation link */
+  .nav-link {
+    @apply flex items-center gap-4 px-3 py-3 rounded-lg transition-colors cursor-pointer;
+    color: rgb(var(--color-text-primary));
+  }
+
+  .nav-link:hover {
+    background-color: rgb(var(--color-surface));
+  }
+
+  .nav-link-active {
+    @apply font-bold;
+  }
+
+  /* Badge for unread counts */
+  .badge {
+    @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full;
+  }
+
+  /* Avatar */
+  .avatar {
+    @apply rounded-full object-cover;
+    background-color: rgb(var(--color-surface));
+  }
+
+  /* Divider */
+  .divider {
+    border-top: 1px solid rgb(var(--color-border));
+  }
 }
 
-body {
-    font-family: 'Bradley Hand', 'Bradley Hand ITC', cursive;
-    font-size: 1.2rem;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: #ffffff;
-    color: #333;
-}
+@layer utilities {
+  /* Backdrop blur for modals/panels */
+  .backdrop-blur-light {
+    @apply backdrop-blur-sm bg-black/30;
+  }
 
-input, textarea, select {
-    font-family: inherit;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
-}
+  /* Text truncate with ellipsis */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    font-size: 1rem;
-}
+  /* Hide scrollbar */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 
-button:hover:not(:disabled) {
-    background-color: #0056b3;
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

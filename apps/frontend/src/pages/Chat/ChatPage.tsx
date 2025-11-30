@@ -1,248 +1,341 @@
-import type { FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
-import { apiClient } from "../../api/client";
-import { JWT_STORAGE_KEY } from "../../config";
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Send, Search, MoreVertical } from 'lucide-react';
+import { apiClient } from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
+import { Avatar, Button } from '../../components/ui';
+import type { ConversationDto } from '../../types';
+import { clsx } from 'clsx';
 
 type Message = {
-    id: number;
-    senderId: number;
-    body: string;
-    sentAt: string;
+  id: number;
+  senderId: number;
+  body: string;
+  sentAt: string;
 };
 
 type ConversationResponse = {
-    conversationId: number;
-    messages: Message[];
-};
-
-type ProfileDto = {
-    displayName: string;
-    bio: string;
-    avatarUrl: string;
-    visibility: string;
+  conversationId: number;
+  messages: Message[];
 };
 
 export function ChatPage() {
-    const { otherUserId } = useParams();
-    const [conversation, setConversation] = useState<ConversationResponse | null>(
-        null
-    );
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [newMessage, setNewMessage] = useState("");
-    const [sending, setSending] = useState(false);
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-    const [otherUserProfile, setOtherUserProfile] = useState<ProfileDto | null>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { otherUserId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<ConversationDto[]>([]);
+  const [activeConversation, setActiveConversation] = useState<ConversationResponse | null>(null);
+  const [otherUserName, setOtherUserName] = useState<string>('');
+  const [otherUserAvatar, setOtherUserAvatar] = useState<string | undefined>();
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const otherIdNum = otherUserId ? Number(otherUserId) : NaN;
+  useEffect(() => {
+    loadConversations();
+  }, []);
 
-    // Decode JWT to get current user ID
-    const getUserIdFromToken = () => {
-        const token = localStorage.getItem(JWT_STORAGE_KEY);
-        if (!token) return null;
-
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.sub;
-        } catch (e) {
-            console.error("Failed to decode token:", e);
-            return null;
-        }
-    };
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    useEffect(() => {
-        // Get current user ID
-        const userId = getUserIdFromToken();
-        if (userId) {
-            setCurrentUserId(Number(userId));
-        }
-
-        if (!otherUserId) {
-            setError("No user specified.");
-            setLoading(false);
-            return;
-        }
-
-        async function loadData() {
-            try {
-                // Load conversation and other user's profile in parallel
-                const [conversationRes, profileRes] = await Promise.all([
-                    apiClient.get<ConversationResponse>(`/messages/conversation/${otherUserId}`),
-                    apiClient.get<ProfileDto>(`/profile/${otherUserId}`)
-                ]);
-                setConversation(conversationRes);
-                setOtherUserProfile(profileRes);
-
-                // Mark messages as read
-                await apiClient.post(`/messages/mark-read/${otherUserId}`, {});
-            } catch (err: any) {
-                setError(err.message ?? "Failed to load data");
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        void loadData();
-    }, [otherUserId]);
-
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        scrollToBottom();
-    }, [conversation?.messages]);
-
-    async function handleSend(e: FormEvent) {
-        e.preventDefault();
-        if (!newMessage.trim() || !otherUserId || Number.isNaN(otherIdNum)) {
-            return;
-        }
-
-        setSending(true);
-        setError(null);
-
-        try {
-            // Fixed: Use recipientId instead of toUserId
-            await apiClient.post("/messages/send", {
-                recipientId: otherIdNum,
-                body: newMessage.trim(),
-            });
-
-            setNewMessage("");
-
-            // Reload conversation
-            const res = await apiClient.get<ConversationResponse>(
-                `/messages/conversation/${otherUserId}`
-            );
-            setConversation(res);
-        } catch (err: any) {
-            setError(err.message ?? "Failed to send message");
-        } finally {
-            setSending(false);
-        }
+  useEffect(() => {
+    if (otherUserId) {
+      loadConversation(Number(otherUserId));
     }
+  }, [otherUserId]);
 
-    if (loading) return <p>Loading conversation...</p>;
-    if (!conversation) return <p>No conversation found.</p>;
+  const loadConversations = async () => {
+    try {
+      const connectionsData = await apiClient.get<{
+        friends: any[];
+      }>('/connections');
 
-    return (
-        <div>
-            <h2 style={{ marginBottom: "1rem" }}>{otherUserProfile?.displayName || `User ${otherUserId}`}</h2>
+      // Convert friends to conversations
+      const convos: ConversationDto[] = connectionsData.friends.map((friend: any) => ({
+        otherUserId: friend.userId,
+        otherUserName: friend.displayName,
+        otherUserAvatar: friend.avatarUrl,
+        lastMessage: '', // Could be enhanced with actual last message
+        lastMessageTime: undefined,
+        unreadCount: friend.unreadCount || 0,
+      }));
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+      setConversations(convos);
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+      setLoading(false);
+    }
+  };
 
-            <div
-                style={{
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    backgroundColor: "#f9f9f9",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: 500,
-                }}
-            >
-                {/* Messages area */}
-                <div
-                    style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: "0.75rem",
-                    }}
-                >
-                    {conversation.messages.length === 0 && <p>No messages yet. Start the conversation!</p>}
-                    {conversation.messages.map((m) => {
-                        const isOutgoing = m.senderId === currentUserId;
-                        const senderName = isOutgoing ? "You" : (otherUserProfile?.displayName || "User");
+  const loadConversation = async (userId: number) => {
+    try {
+      const [conversationRes, profileRes] = await Promise.all([
+        apiClient.get<ConversationResponse>(`/messages/conversation/${userId}`),
+        apiClient.get<{ displayName: string; avatarUrl?: string }>(`/profile/${userId}`),
+      ]);
 
-                        return (
-                            <div
-                                key={m.id}
-                                style={{
-                                    marginBottom: "0.5rem",
-                                    textAlign: isOutgoing ? "right" : "left",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: "inline-block",
-                                        padding: "0.4rem 0.6rem",
-                                        borderRadius: 8,
-                                        background: isOutgoing ? "#007bff" : "#e3f2fd",
-                                        color: isOutgoing ? "#fff" : "#000",
-                                        maxWidth: "70%",
-                                        textAlign: "left",
-                                    }}
-                                >
-                                    <div style={{
-                                        fontSize: "0.8rem",
-                                        fontWeight: "bold",
-                                        color: isOutgoing ? "#e3f2fd" : "#555",
-                                        marginBottom: "0.2rem"
-                                    }}>
-                                        {senderName}
-                                    </div>
-                                    <div>{m.body}</div>
-                                    <div style={{
-                                        fontSize: "0.7rem",
-                                        color: isOutgoing ? "#cce5ff" : "#888",
-                                        marginTop: "0.2rem"
-                                    }}>
-                                        {new Date(m.sentAt).toLocaleString()}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                    <div ref={messagesEndRef} />
-                </div>
+      setActiveConversation(conversationRes);
+      setOtherUserName(profileRes.displayName);
+      setOtherUserAvatar(profileRes.avatarUrl);
 
-                {/* Input area */}
-                <form
-                    onSubmit={handleSend}
-                    style={{
-                        display: "flex",
-                        gap: "0.5rem",
-                        padding: "0.75rem",
-                        borderTop: "1px solid #ddd",
-                        backgroundColor: "#fff",
-                        borderRadius: "0 0 8px 8px",
-                    }}
-                >
-                    <input
-                        type="text"
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        style={{
-                            flex: 1,
-                            padding: "0.75rem",
-                            border: "1px solid #ddd",
-                            borderRadius: 4,
-                            outline: "none",
-                            fontSize: "1.2rem",
-                        }}
-                    />
-                    <button
-                        type="submit"
-                        disabled={sending}
-                        style={{
-                            padding: "0.5rem 1rem",
-                            backgroundColor: "#007bff",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: 4,
-                            cursor: sending ? "not-allowed" : "pointer",
-                            opacity: sending ? 0.6 : 1,
-                        }}
-                    >
-                        {sending ? "Sending..." : "Send"}
-                    </button>
-                </form>
-            </div>
+      // Mark messages as read
+      await apiClient.post(`/messages/mark-read/${userId}`, {});
+
+      // Update unread count in conversations list
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.otherUserId === userId ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+
+      // Scroll to bottom
+      setTimeout(() => scrollToBottom(), 100);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !otherUserId) return;
+
+    setSending(true);
+
+    try {
+      await apiClient.post('/messages/send', {
+        recipientId: Number(otherUserId),
+        body: newMessage.trim(),
+      });
+
+      setNewMessage('');
+
+      // Reload conversation
+      await loadConversation(Number(otherUserId));
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.otherUserName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMins = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMs / 3600000);
+
+    if (diffInMins < 1) return 'Just now';
+    if (diffInMins < 60) return `${diffInMins}m`;
+    if (diffInHours < 24) return `${diffInHours}h`;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    <div className="flex h-screen">
+      {/* Conversations List */}
+      <div className="w-96 border-r border-light-border flex flex-col bg-light-bg">
+        {/* Header */}
+        <div className="p-4 border-b border-light-border">
+          <h2 className="text-xl font-bold text-light-text-primary mb-4">
+            Messages
+          </h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search messages"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input"
+            />
+          </div>
         </div>
-    );
+
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-light-text-secondary">
+                {searchQuery ? 'No conversations found' : 'No messages yet'}
+              </p>
+            </div>
+          ) : (
+            <div>
+              {filteredConversations.map((conv) => (
+                <button
+                  key={conv.otherUserId}
+                  onClick={() => navigate(`/chat/${conv.otherUserId}`)}
+                  className={clsx(
+                    'w-full p-4 flex items-center gap-3 hover:bg-light-surface transition-colors border-b border-light-border',
+                    otherUserId === String(conv.otherUserId) && 'bg-light-surface'
+                  )}
+                >
+                  <div className="relative">
+                    <Avatar
+                      src={conv.otherUserAvatar}
+                      alt={conv.otherUserName}
+                      size="md"
+                      fallback={conv.otherUserName}
+                    />
+                    {conv.unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-semibold">
+                          {conv.unreadCount}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold truncate text-light-text-primary">
+                        {conv.otherUserName}
+                      </p>
+                      {conv.lastMessageTime && (
+                        <span className="text-xs text-light-text-secondary">
+                          {formatTimestamp(conv.lastMessageTime)}
+                        </span>
+                      )}
+                    </div>
+                    {conv.lastMessage && (
+                      <p className={clsx(
+                        'text-sm truncate',
+                        conv.unreadCount > 0
+                          ? 'text-light-text-primary font-semibold'
+                          : 'text-light-text-secondary'
+                      )}>
+                        {conv.lastMessage}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Active Chat */}
+      <div className="flex-1 flex flex-col bg-light-bg">
+        {!otherUserId ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-light-surface rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-light-text-primary mb-2">
+                Your Messages
+              </h3>
+              <p className="text-light-text-secondary">
+                Select a conversation to start messaging
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-light-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar
+                  src={otherUserAvatar}
+                  alt={otherUserName}
+                  size="md"
+                  fallback={otherUserName}
+                />
+                <div>
+                  <h3 className="font-semibold text-light-text-primary">
+                    {otherUserName}
+                  </h3>
+                  <p className="text-sm text-light-text-secondary">
+                    Active now
+                  </p>
+                </div>
+              </div>
+              <button className="p-2 hover:bg-light-surface rounded-full">
+                <MoreVertical className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {activeConversation?.messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-light-text-secondary">
+                    No messages yet. Start the conversation!
+                  </p>
+                </div>
+              ) : (
+                activeConversation?.messages.map((msg) => {
+                  const isOutgoing = Number(msg.senderId) === Number(user?.id);
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={clsx(
+                        'flex w-full',
+                        isOutgoing ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      <div
+                        className={clsx(
+                          'max-w-[70%] rounded-2xl px-4 py-2',
+                          isOutgoing
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-light-surface text-light-text-primary'
+                        )}
+                      >
+                        <p className="text-sm">{msg.body}</p>
+                        <p className={clsx(
+                          'text-xs mt-1',
+                          isOutgoing ? 'text-blue-100' : 'text-light-text-secondary'
+                        )}>
+                          {formatTimestamp(msg.sentAt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input */}
+            <div className="p-4 border-t border-light-border">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  disabled={sending}
+                  className="flex-1 px-4 py-3 bg-light-surface border border-light-border rounded-full text-light-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Button
+                  type="submit"
+                  disabled={!newMessage.trim() || sending}
+                  variant="primary"
+                  className="rounded-full w-12 h-12 p-0"
+                >
+                  <Send className="w-5 h-5" />
+                </Button>
+              </form>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }

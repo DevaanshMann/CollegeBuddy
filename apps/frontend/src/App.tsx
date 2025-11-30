@@ -1,88 +1,266 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { NavBar } from "./components/NavBar";
-import { LandingPage } from "./pages/Landing/LandingPage";
-import { SignupPage } from "./pages/Auth/SignupPage";
-import { LoginPage } from "./pages/Auth/LoginPage";
-import { VerifyPage } from "./pages/Auth/VerifyPage";
-import { ProfilePage } from "./pages/Profile/ProfilePage";
-import { SearchPage } from "./pages/Search/SearchPage";
-import { ConnectionsPage } from "./pages/Connections/ConnectionsPage";
-import { ChatPage } from "./pages/Chat/ChatPage";
-import { JWT_STORAGE_KEY } from "./config";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Sidebar } from './components/Sidebar';
+import { NotificationsPanel } from './components/NotificationsPanel';
+import { LandingPage } from './pages/Landing/LandingPage';
+import { SignupPage } from './pages/Auth/SignupPage';
+import { LoginPage } from './pages/Auth/LoginPage';
+import { VerifyPage } from './pages/Auth/VerifyPage';
+import { HomePage } from './pages/Home/HomePage';
+import { ProfilePage } from './pages/Profile/ProfilePage';
+import { SearchPage } from './pages/Search/SearchPage';
+import { ConnectionsPage } from './pages/Connections/ConnectionsPage';
+import { ChatPage } from './pages/Chat/ChatPage';
+import type { NotificationDto } from './types';
+import { apiClient } from './api/client';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const isAuthenticated = Boolean(localStorage.getItem(JWT_STORAGE_KEY));
+  const { isAuthenticated } = useAuth();
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return <>{children}</>;
+  return <>{children}</>;
 }
 
 function AppContent() {
-    const location = useLocation();
-    const isAuthenticated = Boolean(localStorage.getItem(JWT_STORAGE_KEY));
-    const showNavBar = location.pathname !== "/" || isAuthenticated;
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
-    return (
-        <div style={{ padding: showNavBar ? "1rem 2rem" : "0", maxWidth: "1200px", margin: "0 auto" }}>
-            {showNavBar && <NavBar />}
-            <main style={{ marginTop: showNavBar ? "2rem" : "0" }}>
-                <Routes>
-                    <Route
-                        path="/"
-                        element={isAuthenticated ? <Navigate to="/profile" replace /> : <LandingPage />}
-                    />
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/verify" element={<VerifyPage />} />
+  // Public routes (no sidebar)
+  const publicRoutes = ['/', '/login', '/signup', '/verify'];
+  const isPublicRoute = publicRoutes.includes(location.pathname);
 
-                    {/* Protected routes */}
-                    <Route
-                        path="/profile"
-                        element={
-                            <ProtectedRoute>
-                                <ProfilePage />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/search"
-                        element={
-                            <ProtectedRoute>
-                                <SearchPage />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/connections"
-                        element={
-                            <ProtectedRoute>
-                                <ConnectionsPage />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/chat/:otherUserId"
-                        element={
-                            <ProtectedRoute>
-                                <ChatPage />
-                            </ProtectedRoute>
-                        }
-                    />
-                </Routes>
-            </main>
-        </div>
-    );
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadNotifications();
+      loadUnreadMessages();
+    }
+  }, [isAuthenticated, location.pathname]);
+
+  const loadNotifications = async () => {
+    try {
+      const connectionsData = await apiClient.get<{
+        incomingRequests: any[];
+      }>('/connections');
+
+      // Convert connection requests to notifications
+      const requestNotifications: NotificationDto[] = connectionsData.incomingRequests.map(
+        (req: any) => ({
+          id: `req-${req.requesterId}`,
+          type: 'CONNECTION_REQUEST' as const,
+          userId: req.requesterId,
+          userName: req.requesterName,
+          userAvatar: req.requesterAvatar,
+          message: 'sent you a connection request',
+          timestamp: req.createdAt || new Date().toISOString(),
+          isRead: false,
+        })
+      );
+
+      setNotifications(requestNotifications);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  };
+
+  const loadUnreadMessages = async () => {
+    try {
+      const connectionsData = await apiClient.get<{
+        friends: any[];
+      }>('/connections');
+
+      const unreadCount = connectionsData.friends.reduce(
+        (sum: number, friend: any) => sum + (friend.unreadCount || 0),
+        0
+      );
+
+      setUnreadMessages(unreadCount);
+    } catch (error) {
+      console.error('Failed to load unread messages:', error);
+    }
+  };
+
+  const handleAcceptRequest = async (userId: number) => {
+    try {
+      await apiClient.post('/connections/respond', {
+        otherUserId: userId,
+        accept: true,
+      });
+      loadNotifications(); // Refresh notifications
+    } catch (error) {
+      console.error('Failed to accept request:', error);
+    }
+  };
+
+  const handleDeclineRequest = async (userId: number) => {
+    try {
+      await apiClient.post('/connections/respond', {
+        otherUserId: userId,
+        accept: false,
+      });
+      loadNotifications(); // Refresh notifications
+    } catch (error) {
+      console.error('Failed to decline request:', error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
+      {/* Sidebar for authenticated users on non-public routes */}
+      {isAuthenticated && !isPublicRoute && (
+        <Sidebar
+          onNotificationsClick={() => setShowNotifications(true)}
+          unreadNotifications={notifications.filter(n => !n.isRead).length}
+          unreadMessages={unreadMessages}
+        />
+      )}
+
+      {/* Notifications Panel */}
+      <NotificationsPanel
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onAcceptRequest={handleAcceptRequest}
+        onDeclineRequest={handleDeclineRequest}
+        onMarkAllRead={() => {
+          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        }}
+      />
+
+      {/* Main Content */}
+      <main
+        className={`
+          ${isAuthenticated && !isPublicRoute ? 'ml-64' : ''}
+          min-h-screen
+        `}
+      >
+        <Routes>
+          {/* Public routes */}
+          <Route
+            path="/"
+            element={isAuthenticated ? <Navigate to="/home" replace /> : <LandingPage />}
+          />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/verify" element={<VerifyPage />} />
+
+          {/* Protected routes */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/connections"
+            element={
+              <ProtectedRoute>
+                <ConnectionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/:otherUserId"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch all - redirect to home or landing */}
+          <Route
+            path="*"
+            element={<Navigate to={isAuthenticated ? '/home' : '/'} replace />}
+          />
+        </Routes>
+      </main>
+
+      {/* Toast notifications */}
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'rgb(38, 38, 38)',
+            color: 'rgb(255, 255, 255)',
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid rgb(54, 54, 54)',
+          },
+          success: {
+            style: {
+              background: 'rgb(34, 197, 94)',
+              color: 'rgb(255, 255, 255)',
+            },
+            iconTheme: {
+              primary: 'rgb(255, 255, 255)',
+              secondary: 'rgb(34, 197, 94)',
+            },
+          },
+          error: {
+            style: {
+              background: 'rgb(239, 68, 68)',
+              color: 'rgb(255, 255, 255)',
+            },
+            iconTheme: {
+              primary: 'rgb(255, 255, 255)',
+              secondary: 'rgb(239, 68, 68)',
+            },
+          },
+        }}
+      />
+    </div>
+  );
 }
 
 function App() {
-    return (
-        <BrowserRouter>
-            <AppContent />
-        </BrowserRouter>
-    );
+  return (
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+  );
 }
 
 export default App;

@@ -1,379 +1,390 @@
-import { useState, useEffect } from "react";
-import type { FormEvent } from "react";
-import { apiClient } from "../../api/client";
-import { JWT_STORAGE_KEY } from "../../config";
+import { useState, useEffect } from 'react';
+import { Search, X, UserPlus, UserCheck, UserMinus, Clock } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { apiClient } from '../../api/client';
+import { Avatar, Button, Modal } from '../../components/ui';
+import toast from 'react-hot-toast';
 
 type SearchResult = {
-    userId: number;
-    displayName: string;
-    avatarUrl?: string;
-    visibility?: string;
-    campusDomain?: string;
+  userId: number;
+  displayName: string;
+  avatarUrl?: string;
+  visibility?: string;
+  campusDomain?: string;
 };
 
-type UserDto = {
-    userId: number;
-    displayName: string;
-    avatarUrl?: string;
-    visibility?: string;
-    campusDomain?: string;
-};
+type ConnectionStatus = 'you' | 'connected' | 'pending' | 'connect';
 
-type ConnectionsResponse = {
-    connections: UserDto[];
-    incomingRequests: UserDto[];
-    outgoingRequests: UserDto[];
-};
+const RECENT_SEARCHES_KEY = 'collegebuddy_recent_searches';
+const MAX_RECENT_SEARCHES = 10;
 
 export function SearchPage() {
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-    const [connectionsData, setConnectionsData] = useState<ConnectionsResponse>({
-        connections: [],
-        incomingRequests: [],
-        outgoingRequests: []
-    });
-    const [confirmDisconnect, setConfirmDisconnect] = useState<{ userId: number; displayName: string } | null>(null);
+  const { user } = useAuth();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [connections, setConnections] = useState<number[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<number[]>([]);
+  const [confirmDisconnect, setConfirmDisconnect] = useState<{
+    userId: number;
+    displayName: string;
+  } | null>(null);
 
-    // Decode JWT to get current user ID
-    const getUserIdFromToken = () => {
-        const token = localStorage.getItem(JWT_STORAGE_KEY);
-        if (!token) return null;
+  useEffect(() => {
+    loadRecentSearches();
+    loadConnections();
+  }, []);
 
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            return payload.sub;
-        } catch (e) {
-            console.error("Failed to decode token:", e);
-            return null;
-        }
-    };
+  const loadRecentSearches = () => {
+    try {
+      const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Failed to load recent searches:', error);
+    }
+  };
 
-    // Load connections data on component mount
-    useEffect(() => {
-        const userId = getUserIdFromToken();
-        if (userId) {
-            setCurrentUserId(Number(userId));
-        }
+  const saveRecentSearch = (searchTerm: string) => {
+    try {
+      const trimmed = searchTerm.trim();
+      if (!trimmed) return;
 
-        async function loadConnections() {
-            try {
-                const res = await apiClient.get<ConnectionsResponse>("/connections");
-                setConnectionsData(res);
-            } catch (err: any) {
-                console.error("Failed to load connections:", err);
-            }
-        }
+      const updated = [
+        trimmed,
+        ...recentSearches.filter((s) => s !== trimmed),
+      ].slice(0, MAX_RECENT_SEARCHES);
 
-        void loadConnections();
-    }, []);
+      setRecentSearches(updated);
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error('Failed to save recent search:', error);
+    }
+  };
 
-    async function handleSearch(e: FormEvent) {
-        e.preventDefault();
-        if (!query.trim()) {
-            setError("Please enter a search term");
-            return;
-        }
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  };
 
-        setLoading(true);
-        setStatus(null);
-        setError(null);
+  const removeRecentSearch = (searchTerm: string) => {
+    const updated = recentSearches.filter((s) => s !== searchTerm);
+    setRecentSearches(updated);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  };
 
-        try {
-            console.log("Searching for:", query.trim());
+  async function loadConnections() {
+    try {
+      const res = await apiClient.get<{
+        friends: any[];
+        incomingRequests: any[];
+        outgoingRequests: any[];
+      }>('/connections');
 
-            const response = await apiClient.post<any>("/search", {
-                query: query.trim()
-            });
+      setConnections(res.friends.map((f: any) => f.userId));
+      setPendingRequests(res.outgoingRequests.map((r: any) => r.userId));
+    } catch (err) {
+      console.error('Failed to load connections:', err);
+    }
+  }
 
-            console.log("Search response:", response);
-
-            const list: SearchResult[] = Array.isArray(response)
-                ? response
-                : (response?.results ?? []);
-
-            setResults(list);
-
-            if (list.length === 0) {
-                setStatus(`No classmates found for "${query.trim()}".`);
-            } else {
-                setStatus(`Found ${list.length} result${list.length === 1 ? '' : 's'}`);
-            }
-        } catch (err: any) {
-            console.error("Search error:", err);
-            setError(err.message ?? "Search failed");
-        } finally {
-            setLoading(false);
-        }
+  async function handleSearch(searchTerm?: string) {
+    const term = searchTerm || query;
+    if (!term.trim()) {
+      toast.error('Please enter a search term');
+      return;
     }
 
-    async function handleConnect(userId: number, displayName: string) {
-        setError(null);
-        setStatus(null);
+    setLoading(true);
 
-        try {
-            await apiClient.post("/connections/request", {
-                toUserId: userId,
-                message: `Hey ${displayName}, let's connect!`,
-            });
-            setStatus(`Connection request sent to ${displayName}!`);
+    try {
+      const response = await apiClient.post<any>('/search', {
+        query: term.trim(),
+      });
 
-            // Reload connections to update status
-            const res = await apiClient.get<ConnectionsResponse>("/connections");
-            setConnectionsData(res);
-        } catch (err: any) {
-            console.error("Send request error:", err);
-            setError(err.message ?? "Failed to send request");
-        }
+      const list: SearchResult[] = Array.isArray(response)
+        ? response
+        : response?.results ?? [];
+
+      setResults(list);
+      saveRecentSearch(term.trim());
+
+      if (list.length === 0) {
+        toast.error(`No classmates found for "${term.trim()}"`);
+      }
+    } catch (err: any) {
+      console.error('Search error:', err);
+      toast.error(err.message ?? 'Search failed');
+    } finally {
+      setLoading(false);
     }
+  }
 
-    function showDisconnectConfirm(userId: number, displayName: string) {
-        setConfirmDisconnect({ userId, displayName });
+  async function handleConnect(userId: number, displayName: string) {
+    try {
+      await apiClient.post('/connections/request', {
+        toUserId: userId,
+        message: `Hey ${displayName}, let's connect!`,
+      });
+      toast.success(`Connection request sent to ${displayName}!`);
+
+      setPendingRequests([...pendingRequests, userId]);
+    } catch (err: any) {
+      console.error('Send request error:', err);
+      toast.error(err.message ?? 'Failed to send request');
     }
+  }
 
-    async function handleDisconnect() {
-        if (!confirmDisconnect) return;
+  async function handleDisconnect() {
+    if (!confirmDisconnect) return;
 
-        setError(null);
-        setStatus(null);
+    try {
+      await apiClient.del(`/connections/${confirmDisconnect.userId}`);
+      toast.success(`Disconnected from ${confirmDisconnect.displayName}`);
+      setConfirmDisconnect(null);
 
-        try {
-            await apiClient.del(`/connections/${confirmDisconnect.userId}`);
-            setStatus(`Disconnected from ${confirmDisconnect.displayName}`);
-            setConfirmDisconnect(null);
+      setConnections(connections.filter((id) => id !== confirmDisconnect.userId));
 
-            // Reload connections to update status
-            const res = await apiClient.get<ConnectionsResponse>("/connections");
-            setConnectionsData(res);
-        } catch (err: any) {
-            console.error("Disconnect error:", err);
-            setError(err.message ?? "Failed to disconnect");
-            setConfirmDisconnect(null);
-        }
+      // Reload search results to update status
+      if (results.length > 0) {
+        await handleSearch(query);
+      }
+    } catch (err: any) {
+      console.error('Disconnect error:', err);
+      toast.error(err.message ?? 'Failed to disconnect');
+      setConfirmDisconnect(null);
     }
+  }
 
-    // Helper function to determine connection status
-    const getConnectionStatus = (userId: number): "you" | "connected" | "pending" | "connect" => {
-        if (userId === currentUserId) {
-            return "you";
-        }
-        if (connectionsData.connections.some(c => c.userId === userId)) {
-            return "connected";
-        }
-        if (connectionsData.outgoingRequests.some(r => r.userId === userId)) {
-            return "pending";
-        }
-        return "connect";
-    };
+  const getConnectionStatus = (userId: number): ConnectionStatus => {
+    // Handle potential type mismatch between userId and user.id
+    if (user?.id && Number(userId) === Number(user.id)) {
+      console.log('Found your own profile:', userId, user.id);
+      return 'you';
+    }
+    if (connections.includes(userId)) return 'connected';
+    if (pendingRequests.includes(userId)) return 'pending';
+    return 'connect';
+  };
 
-    return (
-        <div>
-            <h2>Search Classmates</h2>
-            <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
-                Search for students at your campus. You can search by name.
-            </p>
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">
+          Search
+        </h1>
+        <p className="text-light-text-secondary dark:text-dark-text-secondary">
+          Find classmates at your campus
+        </p>
+      </div>
 
-            <form
-                onSubmit={handleSearch}
-                style={{ display: "flex", gap: "0.5rem", maxWidth: 480, marginBottom: "1.25rem" }}
+      {/* Search Input */}
+      <div className="relative mb-6">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          className="w-full pl-12 pr-4 py-3 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-light-text-primary dark:text-dark-text-primary"
+        />
+      </div>
+
+      {/* Search Button */}
+      <Button
+        onClick={() => handleSearch()}
+        loading={loading}
+        fullWidth
+        variant="primary"
+        className="mb-8 gap-2"
+      >
+        <Search className="w-4 h-4" />
+        Search
+      </Button>
+
+      {/* Recent Searches */}
+      {results.length === 0 && recentSearches.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+              Recent
+            </h3>
+            <button
+              onClick={clearRecentSearches}
+              className="text-sm text-blue-500 hover:text-blue-600 font-semibold"
             >
-                <input
-                    type="text"
-                    placeholder="Search by name..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    style={{
-                        flex: 1,
-                        padding: "0.75rem",
-                        fontSize: "1rem",
-                        border: "1px solid #ddd",
-                        borderRadius: "4px"
-                    }}
-                />
-                <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                        padding: "0.75rem 1.5rem",
-                        fontSize: "1rem"
-                    }}
-                >
-                    {loading ? "Searching..." : "Search"}
-                </button>
-            </form>
-
-            {status && <p style={{ color: "#9ca3af", marginBottom: "0.75rem" }}>{status}</p>}
-            {error && <p style={{ color: "red", marginBottom: "0.75rem" }}>{error}</p>}
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {results.map((r) => {
-                    const connectionStatus = getConnectionStatus(r.userId);
-
-                    return (
-                        <div
-                            key={r.userId}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "1rem",
-                                borderRadius: "0.5rem",
-                                border: "1px solid #374151",
-                                backgroundColor: "#f9f9f9"
-                            }}
-                        >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                {/* Avatar */}
-                                <div
-                                    style={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: "999px",
-                                        backgroundColor: "#1f2937",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 18,
-                                        fontWeight: "bold",
-                                        color: "white"
-                                    }}
-                                >
-                                    {r.displayName?.charAt(0).toUpperCase() ?? "?"}
-                                </div>
-
-                                {/* Info */}
-                                <div>
-                                    <div style={{ fontWeight: "bold", fontSize: "1.4rem" }}>
-                                        {r.displayName}
-                                    </div>
-                                    {r.campusDomain && (
-                                        <div style={{ fontSize: 14, color: "#666" }}>
-                                            @{r.campusDomain}
-                                        </div>
-                                    )}
-                                    {r.visibility && (
-                                        <div style={{ fontSize: 12, color: "#9ca3af" }}>
-                                            {r.visibility === "PUBLIC" ? "🌍 Public" : "🔒 Private"}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Connection Status / Action */}
-                            {connectionStatus === "you" && (
-                                <span style={{
-                                    padding: "0.5rem 1rem",
-                                    fontSize: "0.9rem",
-                                    color: "#666",
-                                    fontWeight: "bold"
-                                }}>
-                                    You
-                                </span>
-                            )}
-                            {connectionStatus === "connected" && (
-                                <button
-                                    onClick={() => showDisconnectConfirm(r.userId, r.displayName)}
-                                    style={{
-                                        backgroundColor: "#dc2626",
-                                        color: "white",
-                                        border: "none",
-                                        padding: "0.6rem 1.2rem",
-                                        borderRadius: "4px",
-                                        cursor: "pointer",
-                                        fontSize: "1.1rem",
-                                        fontWeight: "bold",
-                                        fontFamily: "inherit"
-                                    }}
-                                >
-                                    Disconnect
-                                </button>
-                            )}
-                            {connectionStatus === "pending" && (
-                                <span style={{
-                                    padding: "0.5rem 1rem",
-                                    fontSize: "0.9rem",
-                                    color: "#f59e0b",
-                                    fontWeight: "bold"
-                                }}>
-                                    Pending
-                                </span>
-                            )}
-                            {connectionStatus === "connect" && (
-                                <button onClick={() => handleConnect(r.userId, r.displayName)}>
-                                    Connect
-                                </button>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Disconnect Confirmation Modal */}
-            {confirmDisconnect && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                    }}
-                >
-                    <div
-                        style={{
-                            backgroundColor: "white",
-                            padding: "2rem",
-                            borderRadius: "0.5rem",
-                            maxWidth: "400px",
-                            textAlign: "center",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-                        }}
-                    >
-                        <h3 style={{ marginBottom: "1rem" }}>Confirm Disconnect</h3>
-                        <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-                            Are you sure you want to disconnect from <strong>{confirmDisconnect.displayName}</strong>?
-                            You will need to send a new connection request to reconnect.
-                        </p>
-                        <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-                            <button
-                                onClick={() => setConfirmDisconnect(null)}
-                                style={{
-                                    padding: "0.5rem 1.5rem",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ddd",
-                                    backgroundColor: "white",
-                                    color: "#333",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDisconnect}
-                                style={{
-                                    padding: "0.5rem 1.5rem",
-                                    borderRadius: "4px",
-                                    border: "none",
-                                    backgroundColor: "#dc2626",
-                                    color: "white",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                Confirm
-                            </button>
-                        </div>
-                    </div>
+              Clear all
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recentSearches.map((search, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setQuery(search);
+                  handleSearch(search);
+                }}
+                className="w-full flex items-center justify-between p-3 hover:bg-light-surface dark:hover:bg-dark-surface rounded-lg transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-gray-400" />
+                  <span className="text-light-text-primary dark:text-dark-text-primary">
+                    {search}
+                  </span>
                 </div>
-            )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeRecentSearch(search);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-opacity"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </button>
+            ))}
+          </div>
         </div>
-    );
+      )}
+
+      {/* Search Results */}
+      {results.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-4">
+            Results ({results.length})
+          </h3>
+          <div className="space-y-3">
+            {results.map((result) => {
+              const status = getConnectionStatus(result.userId);
+
+              return (
+                <div
+                  key={result.userId}
+                  className="flex items-center justify-between p-4 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  {/* User Info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Avatar
+                      src={result.avatarUrl}
+                      alt={result.displayName}
+                      size="md"
+                      fallback={result.displayName}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
+                        {result.displayName}
+                      </p>
+                      {result.campusDomain && (
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">
+                          @{result.campusDomain}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <div className="flex-shrink-0 ml-3">
+                    {status === 'you' && (
+                      <div className="px-3 py-1.5 text-sm font-semibold rounded-lg border-2 border-blue-500 bg-blue-500 text-white">
+                        You
+                      </div>
+                    )}
+                    {status === 'connected' && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setConfirmDisconnect({
+                            userId: result.userId,
+                            displayName: result.displayName,
+                          })
+                        }
+                        className="gap-2"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                        Connected
+                      </Button>
+                    )}
+                    {status === 'pending' && (
+                      <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        Pending
+                      </span>
+                    )}
+                    {status === 'connect' && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() =>
+                          handleConnect(result.userId, result.displayName)
+                        }
+                        className="gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Connect
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {results.length === 0 && recentSearches.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
+            Search for classmates
+          </h3>
+          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+            Enter a name to find students at your campus
+          </p>
+        </div>
+      )}
+
+      {/* Disconnect Confirmation Modal */}
+      <Modal
+        isOpen={!!confirmDisconnect}
+        onClose={() => setConfirmDisconnect(null)}
+        title="Disconnect from connection"
+      >
+        <div className="space-y-4">
+          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+            Are you sure you want to disconnect from{' '}
+            <strong className="text-light-text-primary dark:text-dark-text-primary">
+              {confirmDisconnect?.displayName}
+            </strong>
+            ? You will need to send a new connection request to reconnect.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setConfirmDisconnect(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              fullWidth
+              onClick={handleDisconnect}
+              className="gap-2"
+            >
+              <UserMinus className="w-4 h-4" />
+              Disconnect
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
 }
