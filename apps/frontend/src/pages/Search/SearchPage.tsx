@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, X, UserPlus, UserCheck, UserMinus, Clock } from 'lucide-react';
+import { Search, X, UserPlus, UserCheck, UserMinus, Clock, UserX, MoreVertical, ShieldOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
+import { blockingApi } from '../../api/blocking';
 import { Avatar, Button, Modal } from '../../components/ui';
 import toast from 'react-hot-toast';
 
@@ -30,10 +31,16 @@ export function SearchPage() {
     userId: number;
     displayName: string;
   } | null>(null);
+  const [confirmBlock, setConfirmBlock] = useState<{
+    userId: number;
+    displayName: string;
+  } | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
 
   useEffect(() => {
     loadRecentSearches();
     loadConnections();
+    loadBlockedUsers();
   }, []);
 
   const loadRecentSearches = () => {
@@ -87,6 +94,15 @@ export function SearchPage() {
       setPendingRequests(res.outgoingRequests.map((r: any) => r.userId));
     } catch (err) {
       console.error('Failed to load connections:', err);
+    }
+  }
+
+  async function loadBlockedUsers() {
+    try {
+      const blocked = await blockingApi.getBlockedUsers();
+      setBlockedUsers(blocked.map((b) => b.userId));
+    } catch (err) {
+      console.error('Failed to load blocked users:', err);
     }
   }
 
@@ -155,6 +171,34 @@ export function SearchPage() {
       console.error('Disconnect error:', err);
       toast.error(err.message ?? 'Failed to disconnect');
       setConfirmDisconnect(null);
+    }
+  }
+
+  async function handleBlock() {
+    if (!confirmBlock) return;
+
+    try {
+      await blockingApi.blockUser(confirmBlock.userId);
+      toast.success(`Blocked ${confirmBlock.displayName}`);
+      setConfirmBlock(null);
+
+      setBlockedUsers([...blockedUsers, confirmBlock.userId]);
+    } catch (err: any) {
+      console.error('Block error:', err);
+      toast.error(err.message ?? 'Failed to block user');
+      setConfirmBlock(null);
+    }
+  }
+
+  async function handleUnblock(userId: number, displayName: string) {
+    try {
+      await blockingApi.unblockUser(userId);
+      toast.success(`Unblocked ${displayName}`);
+
+      setBlockedUsers(blockedUsers.filter((id) => id !== userId));
+    } catch (err: any) {
+      console.error('Unblock error:', err);
+      toast.error(err.message ?? 'Failed to unblock user');
     }
   }
 
@@ -260,6 +304,7 @@ export function SearchPage() {
           <div className="space-y-3">
             {results.map((result) => {
               const status = getConnectionStatus(result.userId);
+              const isBlocked = blockedUsers.includes(result.userId);
 
               return (
                 <div
@@ -275,9 +320,16 @@ export function SearchPage() {
                       fallback={result.displayName}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
-                        {result.displayName}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
+                          {result.displayName}
+                        </p>
+                        {isBlocked && (
+                          <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700">
+                            Blocked
+                          </span>
+                        )}
+                      </div>
                       {result.campusDomain && (
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">
                           @{result.campusDomain}
@@ -286,14 +338,14 @@ export function SearchPage() {
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <div className="flex-shrink-0 ml-3">
+                  {/* Action Buttons */}
+                  <div className="flex-shrink-0 ml-3 flex gap-2">
                     {status === 'you' && (
                       <div className="px-3 py-1.5 text-sm font-semibold rounded-lg border-2 border-blue-500 bg-blue-500 text-white">
                         You
                       </div>
                     )}
-                    {status === 'connected' && (
+                    {status === 'connected' && !isBlocked && (
                       <Button
                         variant="secondary"
                         size="sm"
@@ -309,13 +361,13 @@ export function SearchPage() {
                         Connected
                       </Button>
                     )}
-                    {status === 'pending' && (
+                    {status === 'pending' && !isBlocked && (
                       <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
                         <Clock className="w-4 h-4" />
                         Pending
                       </span>
                     )}
-                    {status === 'connect' && (
+                    {status === 'connect' && !isBlocked && (
                       <Button
                         variant="primary"
                         size="sm"
@@ -326,6 +378,33 @@ export function SearchPage() {
                       >
                         <UserPlus className="w-4 h-4" />
                         Connect
+                      </Button>
+                    )}
+                    {status !== 'you' && !isBlocked && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setConfirmBlock({
+                            userId: result.userId,
+                            displayName: result.displayName,
+                          })
+                        }
+                        className="gap-2"
+                      >
+                        <UserX className="w-4 h-4" />
+                        Block
+                      </Button>
+                    )}
+                    {isBlocked && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleUnblock(result.userId, result.displayName)}
+                        className="gap-2"
+                      >
+                        <ShieldOff className="w-4 h-4" />
+                        Unblock
                       </Button>
                     )}
                   </div>
@@ -381,6 +460,46 @@ export function SearchPage() {
             >
               <UserMinus className="w-4 h-4" />
               Disconnect
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Block Confirmation Modal */}
+      <Modal
+        isOpen={!!confirmBlock}
+        onClose={() => setConfirmBlock(null)}
+        title="Block User"
+      >
+        <div className="space-y-4">
+          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+            Are you sure you want to block{' '}
+            <strong className="text-light-text-primary dark:text-dark-text-primary">
+              {confirmBlock?.displayName}
+            </strong>
+            ? They won't be able to:
+          </p>
+          <ul className="list-disc list-inside text-sm text-light-text-secondary dark:text-dark-text-secondary space-y-1 ml-2">
+            <li>Send you messages</li>
+            <li>Send you connection requests</li>
+            <li>See your profile in search results</li>
+          </ul>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => setConfirmBlock(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              fullWidth
+              onClick={handleBlock}
+              className="gap-2"
+            >
+              <UserX className="w-4 h-4" />
+              Block User
             </Button>
           </div>
         </div>
