@@ -14,6 +14,12 @@ import { ProfilePage } from './pages/Profile/ProfilePage';
 import { SearchPage } from './pages/Search/SearchPage';
 import { ConnectionsPage } from './pages/Connections/ConnectionsPage';
 import { ChatPage } from './pages/Chat/ChatPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
+import { BlockedUsersPage } from './pages/Settings/BlockedUsersPage';
+import { DeleteAccountPage } from './pages/Settings/DeleteAccountPage';
+import { AdminDashboardPage } from './pages/Admin/AdminDashboardPage';
+import { GroupsPage } from './pages/Groups/GroupsPage';
+import { GroupDetailPage } from './pages/Groups/GroupDetailPage';
 import type { NotificationDto } from './types';
 import { apiClient } from './api/client';
 
@@ -22,6 +28,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.role !== 'ADMIN') {
+    return <Navigate to="/home" replace />;
   }
 
   return <>{children}</>;
@@ -198,6 +218,54 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/blocked-users"
+            element={
+              <ProtectedRoute>
+                <BlockedUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/delete-account"
+            element={
+              <ProtectedRoute>
+                <DeleteAccountPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/groups"
+            element={
+              <ProtectedRoute>
+                <GroupsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups/:groupId"
+            element={
+              <ProtectedRoute>
+                <GroupDetailPage />
               </ProtectedRoute>
             }
           />

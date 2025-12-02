@@ -84,6 +84,10 @@ export function NavBar() {
                         <span>🤝</span>
                         <span>Connections</span>
                     </Link>
+                    <Link to="/settings" style={getPillStyle("/settings")}>
+                        <span>⚙️</span>
+                        <span>Settings</span>
+                    </Link>
 
                     <button
                         onClick={onLogout}
