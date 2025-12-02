@@ -1,0 +1,21 @@
+# Sensitive files - DO NOT COMMIT
+apps/backend/run-with-email.sh
+**/application-local.yml
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
