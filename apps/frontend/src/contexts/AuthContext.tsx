@@ -22,7 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: payload.email || '',
           displayName: payload.displayName || '',
           campusDomain: payload.campusDomain || '',
-          profileVisibility: 'PUBLIC'
+          profileVisibility: 'PUBLIC',
+          role: payload.role || 'STUDENT'
         });
       } catch (error) {
         // Invalid token, clear it

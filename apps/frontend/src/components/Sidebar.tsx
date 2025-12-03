@@ -9,7 +9,9 @@ import {
   Moon,
   Sun,
   LogOut,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Users,
+  Shield
 } from 'lucide-react';
 import { Avatar, Badge } from './ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,9 +39,15 @@ export function Sidebar({
   const navigationItems = [
     { icon: Home, label: 'Home', path: '/home' },
     { icon: Search, label: 'Search', path: '/search' },
+    { icon: Users, label: 'Groups', path: '/groups' },
     { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadMessages },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
+
+  // Add Admin link if user is an admin
+  if (user?.role === 'ADMIN') {
+    navigationItems.push({ icon: Shield, label: 'Admin', path: '/admin' });
+  }
 
   const handleLogout = () => {
     logout();
