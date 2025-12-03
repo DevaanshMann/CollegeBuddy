@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -49,6 +49,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
@@ -67,9 +68,12 @@ function AppContent() {
 
   const loadNotifications = async () => {
     try {
-      const connectionsData = await apiClient.get<{
-        incomingRequests: any[];
-      }>('/connections');
+      const [connectionsData, conversationsData] = await Promise.all([
+        apiClient.get<{
+          incomingRequests: any[];
+        }>('/connections'),
+        apiClient.get<any[]>('/messages/conversations')
+      ]);
 
       // Convert connection requests to notifications
       const requestNotifications: NotificationDto[] = connectionsData.incomingRequests.map(
@@ -85,7 +89,26 @@ function AppContent() {
         })
       );
 
-      setNotifications(requestNotifications);
+      // Convert conversations with unread messages to notifications
+      const messageNotifications: NotificationDto[] = conversationsData
+        .filter((conv: any) => conv.unreadCount > 0)
+        .map((conv: any) => ({
+          id: `msg-${conv.otherUserId}`,
+          type: 'NEW_MESSAGE' as const,
+          userId: conv.otherUserId,
+          userName: conv.otherUserName,
+          userAvatar: conv.otherUserAvatar,
+          message: `sent you ${conv.unreadCount} new message${conv.unreadCount > 1 ? 's' : ''}`,
+          timestamp: conv.lastMessageTime || new Date().toISOString(),
+          isRead: false,
+        }));
+
+      // Combine and sort by timestamp (most recent first)
+      const allNotifications = [...requestNotifications, ...messageNotifications].sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      setNotifications(allNotifications);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     }
@@ -133,6 +156,13 @@ function AppContent() {
     }
   };
 
+  const handleNotificationClick = (notification: NotificationDto) => {
+    if (notification.type === 'NEW_MESSAGE') {
+      navigate(`/chat/${notification.userId}`);
+      setShowNotifications(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
       {/* Sidebar for authenticated users on non-public routes */}
@@ -154,6 +184,7 @@ function AppContent() {
         onMarkAllRead={() => {
           setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         }}
+        onNotificationClick={handleNotificationClick}
       />
 
       {/* Main Content */}

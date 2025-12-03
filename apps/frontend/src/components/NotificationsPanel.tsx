@@ -12,6 +12,7 @@ interface NotificationsPanelProps {
   onAcceptRequest?: (userId: number) => void;
   onDeclineRequest?: (userId: number) => void;
   onMarkAllRead?: () => void;
+  onNotificationClick?: (notification: NotificationDto) => void;
 }
 
 export function NotificationsPanel({
@@ -20,7 +21,8 @@ export function NotificationsPanel({
   notifications,
   onAcceptRequest,
   onDeclineRequest,
-  onMarkAllRead
+  onMarkAllRead,
+  onNotificationClick
 }: NotificationsPanelProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -130,9 +132,15 @@ export function NotificationsPanel({
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
+                      onClick={() => {
+                        if (notification.type === 'NEW_MESSAGE') {
+                          onNotificationClick?.(notification);
+                        }
+                      }}
                       className={clsx(
                         'p-4 hover:bg-gray-50 dark:hover:bg-dark-surface transition-colors',
-                        !notification.isRead && 'bg-blue-50 dark:bg-blue-900/10'
+                        !notification.isRead && 'bg-blue-50 dark:bg-blue-900/10',
+                        notification.type === 'NEW_MESSAGE' && 'cursor-pointer'
                       )}
                     >
                       <div className="flex gap-3">
