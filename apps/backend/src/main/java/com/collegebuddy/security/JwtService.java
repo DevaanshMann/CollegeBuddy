@@ -30,13 +30,18 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String issueToken(Long userId, String campusDomain) {
+    public String issueToken(Long userId, String campusDomain, String role, String email, String displayName) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(ttlSeconds);
 
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
-                .addClaims(Map.of("campusDomain", campusDomain))
+                .addClaims(Map.of(
+                        "campusDomain", campusDomain,
+                        "role", role,
+                        "email", email,
+                        "displayName", displayName
+                ))
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(signingKey(), SignatureAlgorithm.HS256)

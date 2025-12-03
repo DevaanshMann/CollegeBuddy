@@ -9,10 +9,10 @@ import com.collegebuddy.dto.*;
 import com.collegebuddy.email.EmailService;
 import com.collegebuddy.repo.UserRepository;
 import com.collegebuddy.repo.VerificationTokenRepository;
+import com.collegebuddy.repo.ProfileRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @Service
@@ -24,38 +24,33 @@ public class AuthService {
     private final TokenService tokenService;
     private final EmailService emailService;
     private final com.collegebuddy.security.JwtService jwtService;
+    private final ProfileRepository profiles;
 
     public AuthService(UserRepository users,
                        VerificationTokenRepository tokens,
                        PasswordEncoder encoder,
                        TokenService tokenService,
                        EmailService emailService,
-                       com.collegebuddy.security.JwtService jwtService) {
+                       com.collegebuddy.security.JwtService jwtService,
+                       ProfileRepository profiles) {
         this.users = users;
         this.tokens = tokens;
         this.encoder = encoder;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.jwtService = jwtService;
+        this.profiles = profiles;
     }
 
-    /**
-     * Create user with PENDING_VERIFICATION and send verification email.
-     */
     public AuthResponse signup(SignupRequest request) {
-        // 1. Validate domain / .edu requirement
         if (request.email() == null || !request.email().endsWith(".edu")) {
             throw new InvalidEmailDomainException("Campus-only: must use .edu email");
         }
 
-        // (Optional) also match request.campusDomain() against allowed School domains
-
-        // 2. Check duplicate
         if (users.findByEmail(request.email()).isPresent()) {
             throw new EmailAlreadyInUseException("Email already registered");
         }
 
-        // 3. Create user in PENDING_VERIFICATION
         User newUser = new User();
         newUser.setEmail(request.email());
         newUser.setHashedPassword(encoder.encode(request.password()));
@@ -65,23 +60,16 @@ public class AuthService {
 
         User saved = users.save(newUser);
 
-        // 4. Create verification token
         String tokenValue = tokenService.generateVerificationToken(saved.getId());
 
-        // 5. "Send" email (right now this can just log/print)
-        // In prod, this would include a clickable link like /verify?token=abc
         emailService.sendVerificationEmail(
                 saved.getEmail(),
                 tokenValue
         );
 
-        // We do NOT return JWT yet because account isn't active
         return new AuthResponse("pending", null);
     }
 
-    /**
-     * Mark account ACTIVE if token is valid.
-     */
     public void verifyEmail(VerifyEmailRequest request) {
         boolean ok = tokenService.validateVerificationToken(request.token());
         if (!ok) {
@@ -91,9 +79,6 @@ public class AuthService {
         tokenService.markUserActive(request.token());
     }
 
-    /**
-     * Login and receive JWT.
-     */
     public AuthResponse login(LoginRequest request) {
         Optional<User> userOpt = users.findByEmail(request.email());
         if (userOpt.isEmpty()) {
@@ -110,27 +95,30 @@ public class AuthService {
             throw new UnauthorizedException("Account not verified/active");
         }
 
+        // Get profile to include displayName in JWT
+        Profile profile = profiles.findById(user.getId()).orElse(null);
+        String displayName = (profile != null) ? profile.getDisplayName() : user.getEmail().split("@")[0];
+
         String jwt = jwtService.issueToken(
                 user.getId(),
-                user.getCampusDomain()
+                user.getCampusDomain(),
+                user.getRole().name(),
+                user.getEmail(),
+                displayName
         );
 
         return new AuthResponse("ok", jwt);
     }
 
-    /**
-     * Re-send verification email for accounts still pending.
-     */
     public void resendVerification(ResendVerificationRequest request) {
         Optional<User> userOpt = users.findByEmail(request.email());
         if (userOpt.isEmpty()) {
-            // silent no-op or throw, your choice
             return;
         }
 
         User u = userOpt.get();
         if (u.getStatus() == AccountStatus.ACTIVE) {
-            return; // already verified
+            return;
         }
 
         String tokenValue = tokenService.generateVerificationToken(u.getId());
