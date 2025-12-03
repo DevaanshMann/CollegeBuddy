@@ -1,11 +1,14 @@
 package com.collegebuddy.messaging;
 
 import com.collegebuddy.common.exceptions.MessagePermissionException;
+import com.collegebuddy.domain.Conversation;
 import com.collegebuddy.domain.Message;
 import com.collegebuddy.domain.User;
+import com.collegebuddy.dto.ConversationListItemDto;
 import com.collegebuddy.dto.ConversationResponse;
 import com.collegebuddy.dto.MessageDto;
 import com.collegebuddy.dto.SendMessageRequest;
+import com.collegebuddy.repo.BlockedUserRepository;
 import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ConversationRepository;
 import com.collegebuddy.repo.MessageRepository;
@@ -21,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class MessagingService {
@@ -32,17 +36,23 @@ public class MessagingService {
     private final ConnectionRepository connections;
     private final UserRepository users;
     private final ConversationHelper conversationHelper;
+    private final BlockedUserRepository blockedUsers;
+    private final com.collegebuddy.repo.ProfileRepository profiles;
 
     public MessagingService(ConversationRepository conversations,
                             MessageRepository messages,
                             ConnectionRepository connections,
                             UserRepository users,
-                            ConversationHelper conversationHelper) {
+                            ConversationHelper conversationHelper,
+                            BlockedUserRepository blockedUsers,
+                            com.collegebuddy.repo.ProfileRepository profiles) {
         this.conversations = conversations;
         this.messages = messages;
         this.connections = connections;
         this.users = users;
         this.conversationHelper = conversationHelper;
+        this.blockedUsers = blockedUsers;
+        this.profiles = profiles;
     }
 
     @Transactional
@@ -58,6 +68,11 @@ public class MessagingService {
 
         if (!senderCampusDomain.equalsIgnoreCase(recipient.getCampusDomain())) {
             throw new MessagePermissionException("Cannot message users from another campus");
+        }
+
+        // Check if there's a block between users
+        if (blockedUsers.existsBlockBetween(senderId, recipientId)) {
+            throw new MessagePermissionException("Cannot message this user");
         }
 
         long a = Math.min(senderId, recipientId);
@@ -103,6 +118,11 @@ public class MessagingService {
 
             if (!campusDomain.equalsIgnoreCase(other.getCampusDomain())) {
                 throw new MessagePermissionException("Different campus");
+            }
+
+            // Check if there's a block between users
+            if (blockedUsers.existsBlockBetween(currentUserId, otherUserId)) {
+                throw new MessagePermissionException("Cannot view conversation with this user");
             }
 
             long a = Math.min(currentUserId, otherUserId);
@@ -176,5 +196,67 @@ public class MessagingService {
             int updated = messages.markAsRead(convoOpt.get().getId(), currentUserId, Instant.now());
             log.info("Marked {} messages as read in conversation between {} and {}", updated, currentUserId, otherUserId);
         }
+    }
+
+    /**
+     * Get all conversations for a user (anyone they've ever messaged)
+     */
+    @Transactional(readOnly = true)
+    public List<ConversationListItemDto> getAllConversations(Long userId, String campusDomain) {
+        // Get all conversations where user is involved
+        List<Conversation> userConversations = conversations.findAllByUserId(userId);
+
+        return userConversations.stream()
+                .map(convo -> {
+                    // Determine the other user in the conversation
+                    Long otherUserId = convo.getUserAId().equals(userId)
+                            ? convo.getUserBId()
+                            : convo.getUserAId();
+
+                    // Get the other user's details
+                    User otherUser = users.findById(otherUserId).orElse(null);
+                    if (otherUser == null) {
+                        return null; // Skip if user not found
+                    }
+
+                    // Skip if different campus
+                    if (!campusDomain.equalsIgnoreCase(otherUser.getCampusDomain())) {
+                        return null;
+                    }
+
+                    // Skip if there's a block between users
+                    if (blockedUsers.existsBlockBetween(userId, otherUserId)) {
+                        return null;
+                    }
+
+                    // Get the other user's profile
+                    var otherProfile = profiles.findById(otherUserId).orElse(null);
+                    if (otherProfile == null) {
+                        return null; // Skip if profile not found
+                    }
+
+                    // Get the last message
+                    var lastMessageOpt = messages.findLastMessageByConversationId(convo.getId());
+                    String lastMessageBody = lastMessageOpt.map(Message::getBody).orElse("");
+                    Instant lastMessageTime = lastMessageOpt.map(Message::getSentAt).orElse(null);
+
+                    // Get unread count
+                    long unreadCount = messages.countUnreadInConversation(convo.getId(), userId);
+
+                    return new ConversationListItemDto(
+                            otherUserId,
+                            otherProfile.getDisplayName(),
+                            otherProfile.getAvatarUrl(),
+                            lastMessageBody,
+                            lastMessageTime,
+                            unreadCount
+                    );
+                })
+                .filter(Objects::nonNull) // Remove null entries
+                .sorted(Comparator.comparing(
+                        ConversationListItemDto::lastMessageTime,
+                        Comparator.nullsLast(Comparator.reverseOrder())
+                )) // Sort by most recent first
+                .collect(Collectors.toList());
     }
 }

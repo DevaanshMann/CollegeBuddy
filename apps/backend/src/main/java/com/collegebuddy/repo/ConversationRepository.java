@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
@@ -20,4 +21,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             "VALUES (:userAId, :userBId, NOW()) " +
             "ON CONFLICT (user_a_id, user_b_id) DO NOTHING", nativeQuery = true)
     void insertIfNotExists(@Param("userAId") Long userAId, @Param("userBId") Long userBId);
+
+    @Query("SELECT c FROM Conversation c WHERE c.userAId = :userId OR c.userBId = :userId")
+    List<Conversation> findAllByUserId(@Param("userId") Long userId);
 }

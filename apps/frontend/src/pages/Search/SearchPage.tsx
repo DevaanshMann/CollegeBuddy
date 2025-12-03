@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, X, UserPlus, UserCheck, UserMinus, Clock, UserX, MoreVertical, ShieldOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, X, UserPlus, UserCheck, UserMinus, Clock, UserX, MoreVertical, ShieldOff, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { blockingApi } from '../../api/blocking';
@@ -21,6 +22,7 @@ const MAX_RECENT_SEARCHES = 10;
 
 export function SearchPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,13 +87,13 @@ export function SearchPage() {
   async function loadConnections() {
     try {
       const res = await apiClient.get<{
-        friends: any[];
+        connections: any[];
         incomingRequests: any[];
         outgoingRequests: any[];
       }>('/connections');
 
-      setConnections(res.friends.map((f: any) => f.userId));
-      setPendingRequests(res.outgoingRequests.map((r: any) => r.userId));
+      setConnections(res.connections.map((f: any) => f.userId));
+      setPendingRequests(res.outgoingRequests.map((r: any) => r.requestedId));
     } catch (err) {
       console.error('Failed to load connections:', err);
     }
@@ -200,6 +202,10 @@ export function SearchPage() {
       console.error('Unblock error:', err);
       toast.error(err.message ?? 'Failed to unblock user');
     }
+  }
+
+  function handleMessage(userId: number) {
+    navigate(`/chat/${userId}`);
   }
 
   const getConnectionStatus = (userId: number): ConnectionStatus => {
@@ -346,55 +352,82 @@ export function SearchPage() {
                       </div>
                     )}
                     {status === 'connected' && !isBlocked && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setConfirmDisconnect({
-                            userId: result.userId,
-                            displayName: result.displayName,
-                          })
-                        }
-                        className="gap-2"
-                      >
-                        <UserCheck className="w-4 h-4" />
-                        Connected
-                      </Button>
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleMessage(result.userId)}
+                          className="gap-2 bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Message
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setConfirmBlock({
+                              userId: result.userId,
+                              displayName: result.displayName,
+                            })
+                          }
+                          className="gap-2"
+                        >
+                          <UserX className="w-4 h-4" />
+                          Block
+                        </Button>
+                      </>
                     )}
                     {status === 'pending' && !isBlocked && (
-                      <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        Pending
-                      </span>
+                      <>
+                        <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          Pending
+                        </span>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setConfirmBlock({
+                              userId: result.userId,
+                              displayName: result.displayName,
+                            })
+                          }
+                          className="gap-2"
+                        >
+                          <UserX className="w-4 h-4" />
+                          Block
+                        </Button>
+                      </>
                     )}
                     {status === 'connect' && !isBlocked && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() =>
-                          handleConnect(result.userId, result.displayName)
-                        }
-                        className="gap-2"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Connect
-                      </Button>
-                    )}
-                    {status !== 'you' && !isBlocked && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setConfirmBlock({
-                            userId: result.userId,
-                            displayName: result.displayName,
-                          })
-                        }
-                        className="gap-2"
-                      >
-                        <UserX className="w-4 h-4" />
-                        Block
-                      </Button>
+                      <>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() =>
+                            handleConnect(result.userId, result.displayName)
+                          }
+                          className="gap-2"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          Connect
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setConfirmBlock({
+                              userId: result.userId,
+                              displayName: result.displayName,
+                            })
+                          }
+                          className="gap-2"
+                        >
+                          <UserX className="w-4 h-4" />
+                          Block
+                        </Button>
+                      </>
                     )}
                     {isBlocked && (
                       <Button

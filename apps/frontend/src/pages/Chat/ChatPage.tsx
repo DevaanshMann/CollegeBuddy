@@ -3,9 +3,9 @@ import type { FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Send, Search, MoreVertical } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { messagesApi, type ConversationListItem } from '../../api/messages';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, Button } from '../../components/ui';
-import type { ConversationDto } from '../../types';
 import { clsx } from 'clsx';
 
 type Message = {
@@ -24,7 +24,7 @@ export function ChatPage() {
   const { otherUserId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<ConversationDto[]>([]);
+  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [activeConversation, setActiveConversation] = useState<ConversationResponse | null>(null);
   const [otherUserName, setOtherUserName] = useState<string>('');
   const [otherUserAvatar, setOtherUserAvatar] = useState<string | undefined>();
@@ -46,20 +46,7 @@ export function ChatPage() {
 
   const loadConversations = async () => {
     try {
-      const connectionsData = await apiClient.get<{
-        friends: any[];
-      }>('/connections');
-
-      // Convert friends to conversations
-      const convos: ConversationDto[] = connectionsData.friends.map((friend: any) => ({
-        otherUserId: friend.userId,
-        otherUserName: friend.displayName,
-        otherUserAvatar: friend.avatarUrl,
-        lastMessage: '', // Could be enhanced with actual last message
-        lastMessageTime: undefined,
-        unreadCount: friend.unreadCount || 0,
-      }));
-
+      const convos = await messagesApi.getAllConversations();
       setConversations(convos);
       setLoading(false);
     } catch (error) {
@@ -114,8 +101,11 @@ export function ChatPage() {
 
       setNewMessage('');
 
-      // Reload conversation
-      await loadConversation(Number(otherUserId));
+      // Reload conversation and conversations list
+      await Promise.all([
+        loadConversation(Number(otherUserId)),
+        loadConversations(),
+      ]);
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {

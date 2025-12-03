@@ -94,11 +94,12 @@ function AppContent() {
   const loadUnreadMessages = async () => {
     try {
       const connectionsData = await apiClient.get<{
-        friends: any[];
+        connections: any[];
+        unreadCounts: Record<number, number>;
       }>('/connections');
 
-      const unreadCount = connectionsData.friends.reduce(
-        (sum: number, friend: any) => sum + (friend.unreadCount || 0),
+      const unreadCount = Object.values(connectionsData.unreadCounts || {}).reduce(
+        (sum: number, count: number) => sum + count,
         0
       );
 

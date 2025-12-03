@@ -1,5 +1,6 @@
 package com.collegebuddy.messaging;
 
+import com.collegebuddy.dto.ConversationListItemDto;
 import com.collegebuddy.dto.ConversationResponse;
 import com.collegebuddy.dto.MessageDto;
 import com.collegebuddy.dto.SendMessageRequest;
@@ -7,6 +8,8 @@ import com.collegebuddy.security.AuthenticatedUser;
 import com.collegebuddy.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/messages")
@@ -16,6 +19,16 @@ public class MessagingController {
 
     public MessagingController(MessagingService messagingService) {
         this.messagingService = messagingService;
+    }
+
+    @GetMapping("/conversations")
+    public ResponseEntity<List<ConversationListItemDto>> getAllConversations() {
+        AuthenticatedUser current = SecurityUtils.getCurrentUser();
+        List<ConversationListItemDto> conversations = messagingService.getAllConversations(
+                current.id(),
+                current.campusDomain()
+        );
+        return ResponseEntity.ok(conversations);
     }
 
     @PostMapping("/send")

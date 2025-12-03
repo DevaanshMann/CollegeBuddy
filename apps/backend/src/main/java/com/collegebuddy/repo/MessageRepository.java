@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationIdOrderBySentAtAsc(Long conversationId);
@@ -24,4 +25,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("UPDATE Message m SET m.readAt = :readAt " +
            "WHERE m.conversationId = :conversationId AND m.senderId != :userId AND m.readAt IS NULL")
     int markAsRead(@Param("conversationId") Long conversationId, @Param("userId") Long userId, @Param("readAt") java.time.Instant readAt);
+
+    // Get the last message in a conversation
+    @Query("SELECT m FROM Message m WHERE m.conversationId = :conversationId ORDER BY m.sentAt DESC LIMIT 1")
+    Optional<Message> findLastMessageByConversationId(@Param("conversationId") Long conversationId);
 }
