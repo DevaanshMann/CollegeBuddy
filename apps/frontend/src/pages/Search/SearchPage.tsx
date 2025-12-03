@@ -33,10 +33,6 @@ export function SearchPage() {
     userId: number;
     displayName: string;
   } | null>(null);
-  const [confirmBlock, setConfirmBlock] = useState<{
-    userId: number;
-    displayName: string;
-  } | null>(null);
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
 
   useEffect(() => {
@@ -173,22 +169,6 @@ export function SearchPage() {
       console.error('Disconnect error:', err);
       toast.error(err.message ?? 'Failed to disconnect');
       setConfirmDisconnect(null);
-    }
-  }
-
-  async function handleBlock() {
-    if (!confirmBlock) return;
-
-    try {
-      await blockingApi.blockUser(confirmBlock.userId);
-      toast.success(`Blocked ${confirmBlock.displayName}`);
-      setConfirmBlock(null);
-
-      setBlockedUsers([...blockedUsers, confirmBlock.userId]);
-    } catch (err: any) {
-      console.error('Block error:', err);
-      toast.error(err.message ?? 'Failed to block user');
-      setConfirmBlock(null);
     }
   }
 
@@ -352,82 +332,34 @@ export function SearchPage() {
                       </div>
                     )}
                     {status === 'connected' && !isBlocked && (
-                      <>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleMessage(result.userId)}
-                          className="gap-2 bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          Message
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() =>
-                            setConfirmBlock({
-                              userId: result.userId,
-                              displayName: result.displayName,
-                            })
-                          }
-                          className="gap-2"
-                        >
-                          <UserX className="w-4 h-4" />
-                          Block
-                        </Button>
-                      </>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleMessage(result.userId)}
+                        className="gap-2 bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Message
+                      </Button>
                     )}
                     {status === 'pending' && !isBlocked && (
-                      <>
-                        <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          Pending
-                        </span>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() =>
-                            setConfirmBlock({
-                              userId: result.userId,
-                              displayName: result.displayName,
-                            })
-                          }
-                          className="gap-2"
-                        >
-                          <UserX className="w-4 h-4" />
-                          Block
-                        </Button>
-                      </>
+                      <span className="text-sm text-yellow-500 dark:text-yellow-400 font-medium flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        Pending
+                      </span>
                     )}
                     {status === 'connect' && !isBlocked && (
-                      <>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() =>
-                            handleConnect(result.userId, result.displayName)
-                          }
-                          className="gap-2"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Connect
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() =>
-                            setConfirmBlock({
-                              userId: result.userId,
-                              displayName: result.displayName,
-                            })
-                          }
-                          className="gap-2"
-                        >
-                          <UserX className="w-4 h-4" />
-                          Block
-                        </Button>
-                      </>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() =>
+                          handleConnect(result.userId, result.displayName)
+                        }
+                        className="gap-2"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Connect
+                      </Button>
                     )}
                     {isBlocked && (
                       <Button
@@ -493,46 +425,6 @@ export function SearchPage() {
             >
               <UserMinus className="w-4 h-4" />
               Disconnect
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Block Confirmation Modal */}
-      <Modal
-        isOpen={!!confirmBlock}
-        onClose={() => setConfirmBlock(null)}
-        title="Block User"
-      >
-        <div className="space-y-4">
-          <p className="text-light-text-secondary dark:text-dark-text-secondary">
-            Are you sure you want to block{' '}
-            <strong className="text-light-text-primary dark:text-dark-text-primary">
-              {confirmBlock?.displayName}
-            </strong>
-            ? They won't be able to:
-          </p>
-          <ul className="list-disc list-inside text-sm text-light-text-secondary dark:text-dark-text-secondary space-y-1 ml-2">
-            <li>Send you messages</li>
-            <li>Send you connection requests</li>
-            <li>See your profile in search results</li>
-          </ul>
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => setConfirmBlock(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              fullWidth
-              onClick={handleBlock}
-              className="gap-2"
-            >
-              <UserX className="w-4 h-4" />
-              Block User
             </Button>
           </div>
         </div>
