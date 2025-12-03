@@ -20,6 +20,7 @@ import { DeleteAccountPage } from './pages/Settings/DeleteAccountPage';
 import { AdminDashboardPage } from './pages/Admin/AdminDashboardPage';
 import { GroupsPage } from './pages/Groups/GroupsPage';
 import { GroupDetailPage } from './pages/Groups/GroupDetailPage';
+import { GroupChatPage } from './pages/Groups/GroupChatPage';
 import type { NotificationDto } from './types';
 import { apiClient } from './api/client';
 
@@ -309,6 +310,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <GroupDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/groups/:groupId/chat"
+            element={
+              <ProtectedRoute>
+                <GroupChatPage />
               </ProtectedRoute>
             }
           />
