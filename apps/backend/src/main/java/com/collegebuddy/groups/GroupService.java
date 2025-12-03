@@ -5,6 +5,7 @@ import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
 import com.collegebuddy.common.exceptions.UnauthorizedException;
 import com.collegebuddy.domain.*;
 import com.collegebuddy.repo.GroupMemberRepository;
+import com.collegebuddy.repo.GroupMessageRepository;
 import com.collegebuddy.repo.GroupRepository;
 import com.collegebuddy.repo.ProfileRepository;
 import com.collegebuddy.repo.UserRepository;
@@ -28,15 +29,18 @@ public class GroupService {
 
     private final GroupRepository groups;
     private final GroupMemberRepository groupMembers;
+    private final GroupMessageRepository groupMessages;
     private final UserRepository users;
     private final ProfileRepository profiles;
 
     public GroupService(GroupRepository groups,
                         GroupMemberRepository groupMembers,
+                        GroupMessageRepository groupMessages,
                         UserRepository users,
                         ProfileRepository profiles) {
         this.groups = groups;
         this.groupMembers = groupMembers;
+        this.groupMessages = groupMessages;
         this.users = users;
         this.profiles = profiles;
     }
@@ -232,6 +236,78 @@ public class GroupService {
                 userGroupIds.contains(group.getId()),
                 adminGroupIds.contains(group.getId()),
                 group.getCreatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<GroupMessageDto> getGroupMessages(Long userId, Long groupId) {
+        log.info("Getting messages for group {} by user {}", groupId, userId);
+
+        // Verify group exists
+        Group group = groups.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        // Verify user is a member
+        if (!groupMembers.existsByGroupIdAndUserId(groupId, userId)) {
+            throw new UnauthorizedException("You must be a member to view group messages");
+        }
+
+        // Get all messages
+        List<GroupMessage> messages = groupMessages.findByGroupIdOrderBySentAtAsc(groupId);
+
+        // Convert to DTOs with sender info
+        return messages.stream()
+                .map(msg -> {
+                    Profile senderProfile = profiles.findById(msg.getSenderId()).orElse(null);
+                    String senderName = senderProfile != null ? senderProfile.getDisplayName() : "Unknown";
+                    String senderAvatar = senderProfile != null ? senderProfile.getAvatarUrl() : null;
+
+                    return new GroupMessageDto(
+                            msg.getId(),
+                            msg.getSenderId(),
+                            senderName,
+                            senderAvatar,
+                            msg.getBody(),
+                            msg.getSentAt()
+                    );
+                })
+                .toList();
+    }
+
+    @Transactional
+    public GroupMessageDto sendGroupMessage(Long userId, Long groupId, SendGroupMessageRequest request) {
+        log.info("Sending message to group {} by user {}", groupId, userId);
+
+        // Verify group exists
+        Group group = groups.findById(groupId)
+                .orElseThrow(() -> new IllegalArgumentException("Group not found"));
+
+        // Verify user is a member
+        if (!groupMembers.existsByGroupIdAndUserId(groupId, userId)) {
+            throw new UnauthorizedException("You must be a member to send messages");
+        }
+
+        // Create message
+        GroupMessage message = new GroupMessage();
+        message.setGroupId(groupId);
+        message.setSenderId(userId);
+        message.setBody(request.body());
+        message.setSentAt(Instant.now());
+
+        message = groupMessages.save(message);
+
+        // Get sender profile
+        Profile senderProfile = profiles.findById(userId).orElse(null);
+        String senderName = senderProfile != null ? senderProfile.getDisplayName() : "Unknown";
+        String senderAvatar = senderProfile != null ? senderProfile.getAvatarUrl() : null;
+
+        return new GroupMessageDto(
+                message.getId(),
+                message.getSenderId(),
+                senderName,
+                senderAvatar,
+                message.getBody(),
+                message.getSentAt()
         );
     }
 }

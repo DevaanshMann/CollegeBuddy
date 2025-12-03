@@ -116,4 +116,33 @@ public class GroupController {
         groupService.leaveGroup(auth.id(), groupId);
         return ResponseEntity.ok(Map.of("message", "Left group successfully"));
     }
+
+    /**
+     * GET /groups/{groupId}/messages
+     * Get all messages in a group
+     */
+    @GetMapping("/{groupId}/messages")
+    public ResponseEntity<List<GroupMessageDto>> getGroupMessages(@PathVariable Long groupId) {
+        AuthenticatedUser auth = SecurityUtils.getCurrentUser();
+        log.info("GET /groups/{}/messages - User: {}", groupId, auth.id());
+
+        List<GroupMessageDto> messages = groupService.getGroupMessages(auth.id(), groupId);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * POST /groups/{groupId}/messages
+     * Send a message to a group
+     */
+    @PostMapping("/{groupId}/messages")
+    public ResponseEntity<GroupMessageDto> sendGroupMessage(
+            @PathVariable Long groupId,
+            @Valid @RequestBody SendGroupMessageRequest request
+    ) {
+        AuthenticatedUser auth = SecurityUtils.getCurrentUser();
+        log.info("POST /groups/{}/messages - User: {}", groupId, auth.id());
+
+        GroupMessageDto message = groupService.sendGroupMessage(auth.id(), groupId, request);
+        return ResponseEntity.ok(message);
+    }
 }
