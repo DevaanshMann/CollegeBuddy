@@ -19,3 +19,12 @@ apps/backend/run-with-email.sh
 # Environment files
 .env
 .env.local
+
+ # Claude Code local settings
+.claude/settings.local.json
+
+# Maven build directory
+target/
+
+# User uploads
+uploads/
