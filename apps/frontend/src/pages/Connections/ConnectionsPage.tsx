@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "../../api/client";
+import { blockingApi } from "../../api/blocking";
+import toast from "react-hot-toast";
 
 type UserDto = {
     userId: number;
@@ -27,6 +29,9 @@ type ConnectionsResponse = {
 };
 
 export function ConnectionsPage() {
+    const [searchParams] = useSearchParams();
+    const view = searchParams.get('view'); // 'connections' or 'requests'
+
     const [data, setData] = useState<ConnectionsResponse>({
         connections: [],
         incomingRequests: [],
@@ -37,6 +42,8 @@ export function ConnectionsPage() {
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState<{ userId: number; displayName: string } | null>(null);
+
+    // All sections start collapsed
     const [friendsOpen, setFriendsOpen] = useState(false);
     const [incomingOpen, setIncomingOpen] = useState(false);
     const [outgoingOpen, setOutgoingOpen] = useState(false);
@@ -99,123 +106,116 @@ export function ConnectionsPage() {
         }
     }
 
+    async function handleBlock(userId: number, displayName: string) {
+        try {
+            await blockingApi.blockUser(userId);
+            toast.success(`Blocked ${displayName}`);
+            await loadConnections();
+        } catch (err: any) {
+            console.error("Block error:", err);
+            toast.error(err.message ?? "Failed to block user");
+        }
+    }
+
     if (loading) {
-        return <p>Loading connections...</p>;
+        return <p className="text-light-text-primary dark:text-dark-text-primary">Loading connections...</p>;
     }
 
     return (
-        <div>
-            <h2>Your Connections</h2>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">Your Connections</h2>
 
-            <p style={{ marginBottom: "1rem", color: "#9ca3af" }}>
+            <p className="mb-4 text-light-text-secondary dark:text-dark-text-secondary">
                 Friends can message you directly. Incoming and outgoing requests let you manage who
                 you connect with.
             </p>
 
-            {status && <p style={{ color: "#22c55e", marginBottom: "0.75rem" }}>{status}</p>}
-            {error && <p style={{ color: "red", marginBottom: "0.75rem" }}>{error}</p>}
+            {status && <p className="text-green-500 mb-3">{status}</p>}
+            {error && <p className="text-red-500 mb-3">{error}</p>}
 
             {/* Friends */}
-            <section style={{ marginBottom: "1.5rem" }}>
+            {view !== 'requests' && (
+            <section className="mb-6">
                 {(() => {
                     const totalUnread = Object.values(data.unreadCounts).reduce((sum, count) => sum + count, 0);
                     return (
                         <div
                             onClick={() => setFriendsOpen(!friendsOpen)}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                cursor: "pointer",
-                                padding: "0.75rem 1rem",
-                                backgroundColor: totalUnread > 0 ? "#fef3c7" : "#e8f4e8",
-                                borderRadius: "0.5rem",
-                                border: totalUnread > 0 ? "2px solid #f59e0b" : "1px solid #4ade80",
-                                marginBottom: friendsOpen ? "0.75rem" : 0,
-                            }}
+                            className={`flex items-center justify-between cursor-pointer p-4 rounded-lg ${
+                                totalUnread > 0
+                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500'
+                                    : 'bg-green-50 dark:bg-green-900/20 border border-green-500'
+                            } ${friendsOpen ? 'mb-3' : ''}`}
                         >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                                <h3 style={{ margin: 0 }}>Friends ({data.connections.length})</h3>
+                            <div className="flex items-center gap-3">
+                                <h3 className="m-0 font-semibold text-light-text-primary dark:text-dark-text-primary">
+                                    Friends ({data.connections.length})
+                                </h3>
                                 {totalUnread > 0 && (
-                                    <span style={{
-                                        backgroundColor: "#ef4444",
-                                        color: "white",
-                                        borderRadius: "999px",
-                                        padding: "0.2rem 0.6rem",
-                                        fontSize: "0.9rem",
-                                        fontWeight: "bold",
-                                    }}>
+                                    <span className="bg-red-500 text-white rounded-full px-2.5 py-1 text-sm font-bold">
                                         {totalUnread} new message{totalUnread > 1 ? "s" : ""}
                                     </span>
                                 )}
                             </div>
-                            <span style={{ fontSize: "1.2rem" }}>{friendsOpen ? "▼" : "▶"}</span>
+                            <span className="text-xl text-light-text-primary dark:text-dark-text-primary">
+                                {friendsOpen ? "▼" : "▶"}
+                            </span>
                         </div>
                     );
                 })()}
                 {friendsOpen && (
                     <>
-                        <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                        <p className="text-light-text-secondary dark:text-dark-text-secondary mb-2 text-sm">
                             Click "Message" to open a chat with your connection.
                         </p>
                         {data.connections.length === 0 ? (
-                            <p>No connections yet. Search for classmates to connect!</p>
+                            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                                No connections yet. Search for classmates to connect!
+                            </p>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <div className="flex flex-col gap-2">
                                 {data.connections.map((f) => {
                                     const unreadCount = data.unreadCounts[f.userId] || 0;
                                     return (
                                         <div
                                             key={f.userId}
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                padding: "0.6rem 0.75rem",
-                                                borderRadius: "0.5rem",
-                                                border: unreadCount > 0 ? "2px solid #f59e0b" : "1px solid #374151",
-                                                backgroundColor: unreadCount > 0 ? "#fef3c7" : "#f9f9f9",
-                                            }}
+                                            className={`flex items-center justify-between p-3 rounded-lg ${
+                                                unreadCount > 0
+                                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500'
+                                                    : 'bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border'
+                                            }`}
                                         >
-                                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                                <strong>{f.displayName}</strong>
+                                            <div className="flex items-center gap-2">
+                                                <strong className="text-light-text-primary dark:text-dark-text-primary">
+                                                    {f.displayName}
+                                                </strong>
                                                 {f.campusDomain && (
-                                                    <span style={{ fontSize: 12, color: "#666" }}>
+                                                    <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
                                                         @{f.campusDomain}
                                                     </span>
                                                 )}
                                                 {unreadCount > 0 && (
-                                                    <span style={{
-                                                        backgroundColor: "#ef4444",
-                                                        color: "white",
-                                                        borderRadius: "999px",
-                                                        padding: "0.15rem 0.5rem",
-                                                        fontSize: "0.8rem",
-                                                        fontWeight: "bold",
-                                                        marginLeft: "0.25rem",
-                                                    }}>
+                                                    <span className="bg-red-500 text-white rounded-full px-2 py-0.5 text-xs font-bold ml-1">
                                                         {unreadCount}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div className="flex gap-2">
                                                 <button
                                                     onClick={() => navigate(`/chat/${f.userId}`)}
-                                                    style={{ fontFamily: "inherit" }}
+                                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                                                 >
                                                     Message
                                                 </button>
                                                 <button
+                                                    onClick={() => handleBlock(f.userId, f.displayName)}
+                                                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                >
+                                                    Block
+                                                </button>
+                                                <button
                                                     onClick={() => showDisconnectConfirm(f.userId, f.displayName)}
-                                                    style={{
-                                                        backgroundColor: "#dc2626",
-                                                        color: "white",
-                                                        border: "none",
-                                                        padding: "0.5rem 1rem",
-                                                        borderRadius: "4px",
-                                                        cursor: "pointer",
-                                                        fontFamily: "inherit"
-                                                    }}
+                                                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                                                 >
                                                     Disconnect
                                                 </button>
@@ -228,54 +228,54 @@ export function ConnectionsPage() {
                     </>
                 )}
             </section>
+            )}
 
             {/* Incoming */}
-            <section style={{ marginBottom: "1.5rem" }}>
+            {view !== 'connections' && (
+            <section className="mb-6">
                 <div
                     onClick={() => setIncomingOpen(!incomingOpen)}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        cursor: "pointer",
-                        padding: "0.75rem 1rem",
-                        backgroundColor: "#fef3c7",
-                        borderRadius: "0.5rem",
-                        border: "1px solid #fbbf24",
-                        marginBottom: incomingOpen ? "0.75rem" : 0,
-                    }}
+                    className={`flex items-center justify-between cursor-pointer p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-500 ${
+                        incomingOpen ? 'mb-3' : ''
+                    }`}
                 >
-                    <h3 style={{ margin: 0 }}>Incoming Requests ({data.incomingRequests.length})</h3>
-                    <span style={{ fontSize: "1.2rem" }}>{incomingOpen ? "▼" : "▶"}</span>
+                    <h3 className="m-0 font-semibold text-light-text-primary dark:text-dark-text-primary">
+                        Incoming Requests ({data.incomingRequests.length})
+                    </h3>
+                    <span className="text-xl text-light-text-primary dark:text-dark-text-primary">
+                        {incomingOpen ? "▼" : "▶"}
+                    </span>
                 </div>
                 {incomingOpen && (
                     <>
-                        <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                        <p className="text-light-text-secondary dark:text-dark-text-secondary mb-2 text-sm">
                             Classmates who want to connect with you.
                         </p>
                         {data.incomingRequests.length === 0 ? (
-                            <p>No incoming requests.</p>
+                            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                                No incoming requests.
+                            </p>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <div className="flex flex-col gap-2">
                                 {data.incomingRequests.map((r) => (
                                     <div
                                         key={r.userId}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            padding: "0.6rem 0.75rem",
-                                            borderRadius: "0.5rem",
-                                            border: "1px solid #374151",
-                                            backgroundColor: "#fff3cd",
-                                        }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-light-border dark:border-dark-border"
                                     >
-                                        <div>{r.displayName}</div>
-                                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                                            <button onClick={() => handleRespond(r.requestId, "ACCEPT")}>
+                                        <div className="text-light-text-primary dark:text-dark-text-primary">
+                                            {r.displayName}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleRespond(r.requestId, "ACCEPT")}
+                                                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                            >
                                                 Accept
                                             </button>
-                                            <button onClick={() => handleRespond(r.requestId, "DECLINE")}>
+                                            <button
+                                                onClick={() => handleRespond(r.requestId, "DECLINE")}
+                                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                            >
                                                 Decline
                                             </button>
                                         </div>
@@ -286,49 +286,46 @@ export function ConnectionsPage() {
                     </>
                 )}
             </section>
+            )}
 
             {/* Outgoing */}
+            {!view && (
             <section>
                 <div
                     onClick={() => setOutgoingOpen(!outgoingOpen)}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        cursor: "pointer",
-                        padding: "0.75rem 1rem",
-                        backgroundColor: "#e0e7ff",
-                        borderRadius: "0.5rem",
-                        border: "1px solid #818cf8",
-                        marginBottom: outgoingOpen ? "0.75rem" : 0,
-                    }}
+                    className={`flex items-center justify-between cursor-pointer p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-500 ${
+                        outgoingOpen ? 'mb-3' : ''
+                    }`}
                 >
-                    <h3 style={{ margin: 0 }}>Outgoing Requests ({data.outgoingRequests.length})</h3>
-                    <span style={{ fontSize: "1.2rem" }}>{outgoingOpen ? "▼" : "▶"}</span>
+                    <h3 className="m-0 font-semibold text-light-text-primary dark:text-dark-text-primary">
+                        Outgoing Requests ({data.outgoingRequests.length})
+                    </h3>
+                    <span className="text-xl text-light-text-primary dark:text-dark-text-primary">
+                        {outgoingOpen ? "▼" : "▶"}
+                    </span>
                 </div>
                 {outgoingOpen && (
                     <>
-                        <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: 14 }}>
+                        <p className="text-light-text-secondary dark:text-dark-text-secondary mb-2 text-sm">
                             Requests you've sent waiting for response.
                         </p>
                         {data.outgoingRequests.length === 0 ? (
-                            <p>No outgoing requests.</p>
+                            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                                No outgoing requests.
+                            </p>
                         ) : (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            <div className="flex flex-col gap-2">
                                 {data.outgoingRequests.map((r) => (
                                     <div
                                         key={r.userId}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            padding: "0.6rem 0.75rem",
-                                            borderRadius: "0.5rem",
-                                            border: "1px solid #374151",
-                                        }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border"
                                     >
-                                        <div>{r.displayName}</div>
-                                        <span style={{ fontSize: 12, color: "#666" }}>Pending...</span>
+                                        <div className="text-light-text-primary dark:text-dark-text-primary">
+                                            {r.displayName}
+                                        </div>
+                                        <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
+                                            Pending...
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -336,62 +333,32 @@ export function ConnectionsPage() {
                     </>
                 )}
             </section>
+            )}
 
             {/* Disconnect Confirmation Modal */}
             {confirmDisconnect && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.5)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                    }}
-                >
-                    <div
-                        style={{
-                            backgroundColor: "white",
-                            padding: "2rem",
-                            borderRadius: "0.5rem",
-                            maxWidth: "400px",
-                            textAlign: "center",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-                        }}
-                    >
-                        <h3 style={{ marginBottom: "1rem" }}>Confirm Disconnect</h3>
-                        <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-                            Are you sure you want to disconnect from <strong>{confirmDisconnect.displayName}</strong>?
-                            You will need to send a new connection request to reconnect.
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-light-bg dark:bg-dark-bg p-8 rounded-lg max-w-md text-center shadow-xl">
+                        <h3 className="text-xl font-semibold mb-4 text-light-text-primary dark:text-dark-text-primary">
+                            Confirm Disconnect
+                        </h3>
+                        <p className="mb-6 text-light-text-secondary dark:text-dark-text-secondary">
+                            Are you sure you want to disconnect from{' '}
+                            <strong className="text-light-text-primary dark:text-dark-text-primary">
+                                {confirmDisconnect.displayName}
+                            </strong>
+                            ? You will need to send a new connection request to reconnect.
                         </p>
-                        <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                        <div className="flex gap-4 justify-center">
                             <button
                                 onClick={() => setConfirmDisconnect(null)}
-                                style={{
-                                    padding: "0.5rem 1.5rem",
-                                    borderRadius: "4px",
-                                    border: "1px solid #ddd",
-                                    backgroundColor: "white",
-                                    color: "#333",
-                                    cursor: "pointer",
-                                }}
+                                className="px-6 py-2 rounded border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary hover:bg-light-surface dark:hover:bg-dark-surface"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDisconnect}
-                                style={{
-                                    padding: "0.5rem 1.5rem",
-                                    borderRadius: "4px",
-                                    border: "none",
-                                    backgroundColor: "#dc2626",
-                                    color: "white",
-                                    cursor: "pointer",
-                                }}
+                                className="px-6 py-2 rounded bg-red-600 text-white hover:bg-red-700"
                             >
                                 Confirm
                             </button>

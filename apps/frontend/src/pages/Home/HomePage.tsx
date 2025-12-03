@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, MessageCircle, UserPlus, TrendingUp, UserMinus } from 'lucide-react';
+import { Users, MessageCircle, UserPlus, UserMinus } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import type { DashboardStats, ConnectionRequestDto } from '../../types';
 import { Avatar, Button, Modal } from '../../components/ui';
@@ -39,26 +39,34 @@ export function HomePage() {
       setLoading(true);
       const [connectionsData] = await Promise.all([
         apiClient.get<{
-          friends: Friend[];
+          connections: any[];
           incomingRequests: ConnectionRequestDto[];
           outgoingRequests: any[];
+          unreadCounts: Record<number, number>;
         }>('/connections'),
       ]);
 
       setIncomingRequests(connectionsData.incomingRequests || []);
-      setFriends(connectionsData.friends || []);
 
-      // Calculate unread messages
-      const unreadCount = (connectionsData.friends || []).reduce(
-        (sum: number, friend: Friend) => sum + (friend.unreadCount || 0),
-        0
-      );
+      // Map connections to friends format
+      const friendsList = (connectionsData.connections || []).map((conn: any) => ({
+        userId: conn.userId,
+        displayName: conn.displayName,
+        avatarUrl: conn.avatarUrl,
+        unreadCount: connectionsData.unreadCounts?.[conn.userId] || 0,
+      }));
+      setFriends(friendsList);
+
+      // Calculate number of people with unread messages (not total unread count)
+      const peopleWithUnreadMessages = Object.values(connectionsData.unreadCounts || {}).filter(
+        (count: number) => count > 0
+      ).length;
 
       setStats({
         pendingRequestsCount: (connectionsData.incomingRequests || []).length,
-        unreadMessagesCount: unreadCount,
-        connectionsCount: (connectionsData.friends || []).length,
-        profileViews: 0, // Not implemented yet
+        unreadMessagesCount: peopleWithUnreadMessages,
+        connectionsCount: (connectionsData.connections || []).length,
+        profileViews: 0,
       });
     } catch (error) {
       console.error('Failed to load dashboard:', error);
@@ -131,7 +139,7 @@ export function HomePage() {
       icon: Users,
       color: 'text-blue-500',
       bgColor: 'bg-blue-50',
-      onClick: () => navigate('/connections'),
+      onClick: () => navigate('/connections?view=connections'),
     },
     {
       title: 'Unread Messages',
@@ -147,15 +155,7 @@ export function HomePage() {
       icon: UserPlus,
       color: 'text-orange-500',
       bgColor: 'bg-orange-50',
-      onClick: () => navigate('/connections'),
-    },
-    {
-      title: 'Profile Views',
-      value: stats.profileViews,
-      icon: TrendingUp,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-50',
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/connections?view=requests'),
     },
   ];
 
@@ -172,7 +172,7 @@ export function HomePage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -195,164 +195,6 @@ export function HomePage() {
             </button>
           );
         })}
-      </div>
-
-      {/* Connections List */}
-      {friends.length > 0 && (
-        <div className="card p-6 mb-8">
-          <h2 className="text-xl font-bold text-light-text-primary mb-4">
-            Your Connections ({friends.length})
-          </h2>
-          <div className="space-y-3">
-            {friends.map((friend) => (
-              <div
-                key={friend.userId}
-                className="flex items-center justify-between p-4 bg-light-surface rounded-lg"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar
-                    src={friend.avatarUrl}
-                    alt={friend.displayName}
-                    size="md"
-                    fallback={friend.displayName}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-light-text-primary truncate">
-                      {friend.displayName}
-                    </p>
-                    <p className="text-sm text-light-text-secondary">
-                      User ID: {friend.userId}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => navigate(`/chat/${friend.userId}`)}
-                    className="gap-2"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Message
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setConfirmDisconnect({
-                        userId: friend.userId,
-                        displayName: friend.displayName,
-                      })
-                    }
-                    className="gap-2"
-                  >
-                    <UserMinus className="w-4 h-4" />
-                    Disconnect
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pending Connection Requests */}
-      {incomingRequests.length > 0 && (
-        <div className="card p-6 mb-8">
-          <h2 className="text-xl font-bold text-light-text-primary mb-4">
-            Pending Connection Requests
-          </h2>
-          <div className="space-y-4">
-            {incomingRequests.slice(0, 3).map((request) => (
-              <div
-                key={request.requesterId}
-                className="flex items-center justify-between p-4 bg-light-surface rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    src={request.requesterAvatar}
-                    alt={request.requesterName}
-                    size="md"
-                    fallback={request.requesterName}
-                  />
-                  <div>
-                    <p className="font-semibold text-light-text-primary">
-                      {request.requesterName}
-                    </p>
-                    <p className="text-sm text-light-text-secondary">
-                      wants to connect
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleAcceptRequest(request.requesterId)}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleDeclineRequest(request.requesterId)}
-                  >
-                    Decline
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {incomingRequests.length > 3 && (
-              <button
-                onClick={() => navigate('/connections')}
-                className="text-sm text-blue-500 hover:text-blue-600 font-semibold"
-              >
-                View all {incomingRequests.length} requests
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div className="card p-6">
-        <h2 className="text-xl font-bold text-light-text-primary mb-4">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/search')}
-            className="justify-start"
-          >
-            <Users className="w-5 h-5 mr-2" />
-            Find Classmates
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/messages')}
-            className="justify-start"
-          >
-            <MessageCircle className="w-5 h-5 mr-2" />
-            View Messages
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/profile')}
-            className="justify-start"
-          >
-            <Users className="w-5 h-5 mr-2" />
-            Edit Profile
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/connections')}
-            className="justify-start"
-          >
-            <UserPlus className="w-5 h-5 mr-2" />
-            Manage Connections
-          </Button>
-        </div>
       </div>
 
       {/* Disconnect Confirmation Modal */}
