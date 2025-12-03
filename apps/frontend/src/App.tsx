@@ -66,6 +66,17 @@ function AppContent() {
     }
   }, [isAuthenticated, location.pathname]);
 
+  // Listen for messages being read to update notifications immediately
+  useEffect(() => {
+    const handleMessagesRead = () => {
+      loadNotifications();
+      loadUnreadMessages();
+    };
+
+    window.addEventListener('messagesRead', handleMessagesRead);
+    return () => window.removeEventListener('messagesRead', handleMessagesRead);
+  }, []);
+
   const loadNotifications = async () => {
     try {
       const [connectionsData, conversationsData] = await Promise.all([
@@ -121,10 +132,10 @@ function AppContent() {
         unreadCounts: Record<number, number>;
       }>('/connections');
 
-      const unreadCount = Object.values(connectionsData.unreadCounts || {}).reduce(
-        (sum: number, count: number) => sum + count,
-        0
-      );
+      // Count number of people with unread messages, not total messages
+      const unreadCount = Object.values(connectionsData.unreadCounts || {}).filter(
+        (count: number) => count > 0
+      ).length;
 
       setUnreadMessages(unreadCount);
     } catch (error) {
