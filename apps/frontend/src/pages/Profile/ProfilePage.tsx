@@ -75,12 +75,12 @@ export function ProfilePage() {
   async function loadConnectionStats() {
     try {
       const connectionsData = await apiClient.get<{
-        friends: any[];
+        connections: any[];
         incomingRequests: any[];
         outgoingRequests: any[];
       }>('/connections');
 
-      setConnectionsCount(connectionsData.friends.length);
+      setConnectionsCount(connectionsData.connections.length);
       setPendingRequestsCount(connectionsData.incomingRequests.length);
     } catch (error) {
       console.error('Failed to load connection stats:', error);
