@@ -12,6 +12,7 @@ export interface UserDto {
   campusDomain: string;
   avatarUrl?: string;
   profileVisibility: 'PUBLIC' | 'PRIVATE';
+  role?: 'STUDENT' | 'ADMIN';
 }
 
 export interface ProfileDto {
@@ -128,10 +129,12 @@ export interface SendMessageRequest {
 
 export interface NotificationDto {
   id: string;
-  type: 'CONNECTION_REQUEST' | 'CONNECTION_ACCEPTED' | 'NEW_MESSAGE' | 'PROFILE_VIEW';
-  userId: number;
-  userName: string;
+  type: 'CONNECTION_REQUEST' | 'CONNECTION_ACCEPTED' | 'NEW_MESSAGE' | 'NEW_GROUP_MESSAGE' | 'PROFILE_VIEW';
+  userId?: number; // Optional for group messages
+  userName?: string; // Optional for group messages
   userAvatar?: string;
+  groupId?: number; // For group message notifications
+  groupName?: string; // For group message notifications
   message: string;
   timestamp: string;
   isRead: boolean;
