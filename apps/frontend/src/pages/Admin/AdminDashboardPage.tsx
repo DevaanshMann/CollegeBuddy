@@ -64,22 +64,23 @@ export function AdminDashboardPage() {
   const getStatusColor = (status: AccountStatus) => {
     switch (status) {
       case 'ACTIVE':
-        return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+        return 'text-green-700 dark:text-green-400 font-semibold';
       case 'PENDING_VERIFICATION':
-        return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+        return 'text-yellow-700 dark:text-yellow-500 font-semibold';
       case 'DEACTIVATED':
-        return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
+        return 'text-red-700 dark:text-red-400 font-semibold';
       default:
-        return 'text-gray-600 dark:text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/30';
+        return 'text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/30 font-semibold';
     }
   };
 
   const getRoleBadge = (role: string) => {
     if (role === 'ADMIN') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full
+          dark:bg-blue-300 dark:text-black">
           <Shield className="w-3 h-3" />
-          Admin
+          ADMIN
         </span>
       );
     }

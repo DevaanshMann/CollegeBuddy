@@ -218,7 +218,7 @@ export function GroupDetailPage() {
               </div>
 
               {member.role === 'ADMIN' && (
-                <div className="flex items-center gap-1 px-2 py-1 bg-purple-200 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 rounded-full text-xs font-semibold">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full dark:bg-blue-300 dark:text-black">
                   {member.userId === group.creatorId ? (
                     <>
                       <Crown className="w-3 h-3" />

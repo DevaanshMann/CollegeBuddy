@@ -73,7 +73,7 @@ export function SettingsPage() {
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
                   </button>
                 );
               })}
@@ -83,14 +83,14 @@ export function SettingsPage() {
       </div>
 
       {/* Info Card */}
-      <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <div className="mt-8 p-6 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg">
         <div className="flex gap-3">
           <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+            <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-1">
               Your Privacy Matters
             </h3>
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
               We take your privacy seriously. You have full control over your data and who can interact with you on CollegeBuddy.
             </p>
           </div>
