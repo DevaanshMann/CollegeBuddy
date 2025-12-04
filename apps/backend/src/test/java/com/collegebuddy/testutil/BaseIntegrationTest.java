@@ -54,7 +54,11 @@ public abstract class BaseIntegrationTest {
     }
 
     protected String generateToken(Long userId, String campusDomain) {
-        return jwtService.issueToken(userId, campusDomain);
+        return jwtService.issueToken(userId, campusDomain, "STUDENT", "test@" + campusDomain, "Test User");
+    }
+
+    protected String generateToken(Long userId, String campusDomain, String role, String email, String displayName) {
+        return jwtService.issueToken(userId, campusDomain, role, email, displayName);
     }
 
     protected String bearerToken(String token) {
