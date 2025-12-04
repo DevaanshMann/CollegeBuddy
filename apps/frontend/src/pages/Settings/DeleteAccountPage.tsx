@@ -50,24 +50,25 @@ export function DeleteAccountPage() {
       </div>
 
       {/* Warning Card */}
-      <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-6 mb-6">
+      <div className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg p-6 mb-6">
         <div className="flex gap-3">
           <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">
-              Warning: This action cannot be undone
+            <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
+              <span className="text-red-600 dark:text-red-400">WARNING:</span>{' '}
+              THIS ACTION CANNOT BE UNDONE
             </h3>
-            <p className="text-sm text-red-800 dark:text-red-200 mb-3">
+            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-3">
               Deleting your account will permanently remove:
             </p>
-            <ul className="list-disc list-inside text-sm text-red-800 dark:text-red-200 space-y-1 ml-2">
+            <ul className="list-disc list-inside text-sm text-light-text-secondary dark:text-dark-text-secondary space-y-1 ml-2">
               <li>Your profile and personal information</li>
               <li>All your connections and friend requests</li>
               <li>All your messages and conversations</li>
               <li>Your avatar and uploaded files</li>
               <li>Your search history and preferences</li>
             </ul>
-            <p className="text-sm text-red-800 dark:text-red-200 mt-3 font-semibold">
+            <p className="text-sm text-light-text-primary dark:text-dark-text-primary mt-3 font-semibold">
               This data cannot be recovered once deleted.
             </p>
           </div>
@@ -119,9 +120,9 @@ export function DeleteAccountPage() {
         title="Confirm Account Deletion"
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg">
             <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-red-800 dark:text-red-200">
+            <div className="text-sm text-black dark:text-red-200">
               <p className="font-semibold mb-1">This action is permanent and irreversible</p>
               <p>All your data will be permanently deleted from our servers.</p>
             </div>
@@ -135,7 +136,7 @@ export function DeleteAccountPage() {
               Enter your password to confirm
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
               <input
                 id="password"
                 type="password"
