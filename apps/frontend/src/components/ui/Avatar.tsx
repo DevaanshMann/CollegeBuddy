@@ -30,7 +30,7 @@ export function Avatar({
   return (
     <div
       className={clsx(
-        'avatar flex items-center justify-center font-semibold text-gray-600 dark:text-gray-400',
+        'avatar flex items-center justify-center font-semibold text-gray-600 dark:text-gray-500 dark:text-gray-400',
         sizeClasses[size],
         className
       )}

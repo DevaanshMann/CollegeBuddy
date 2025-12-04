@@ -76,6 +76,9 @@ export function ChatPage() {
         )
       );
 
+      // Dispatch event to update notifications in parent
+      window.dispatchEvent(new CustomEvent('messagesRead'));
+
       // Scroll to bottom
       setTimeout(() => scrollToBottom(), 100);
     } catch (error) {
@@ -140,7 +143,7 @@ export function ChatPage() {
             Messages
           </h2>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search messages"
@@ -176,7 +179,7 @@ export function ChatPage() {
                 >
                   <div className="relative">
                     <Avatar
-                      src={conv.otherUserAvatar}
+                      src={conv.otherUserAvatar ?? undefined}
                       alt={conv.otherUserName}
                       size="md"
                       fallback={conv.otherUserName}
@@ -224,7 +227,7 @@ export function ChatPage() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="w-24 h-24 bg-light-surface rounded-full flex items-center justify-center mx-auto mb-4">
-                <Send className="w-12 h-12 text-gray-400" />
+                <Send className="w-12 h-12 text-gray-500 dark:text-gray-400" />
               </div>
               <h3 className="text-xl font-semibold text-light-text-primary mb-2">
                 Your Messages

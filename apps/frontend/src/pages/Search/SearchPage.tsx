@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, UserPlus, UserCheck, UserMinus, Clock, UserX, MoreVertical, ShieldOff, MessageCircle } from 'lucide-react';
+import { Search, X, UserPlus, UserMinus, Clock, ShieldOff, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { blockingApi } from '../../api/blocking';
@@ -213,7 +213,7 @@ export function SearchPage() {
 
       {/* Search Input */}
       <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
         <input
           type="text"
           placeholder="Search by name..."
@@ -261,7 +261,7 @@ export function SearchPage() {
                 className="w-full flex items-center justify-between p-3 hover:bg-light-surface dark:hover:bg-dark-surface rounded-lg transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-gray-400" />
+                  <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   <span className="text-light-text-primary dark:text-dark-text-primary">
                     {search}
                   </span>
@@ -384,7 +384,7 @@ export function SearchPage() {
       {results.length === 0 && recentSearches.length === 0 && !loading && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-gray-400" />
+            <Search className="w-8 h-8 text-gray-500 dark:text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
             Search for classmates
