@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -84,6 +85,7 @@ public class GroupService {
                 1,
                 true,
                 true,
+                0, // unreadCount - new group has no messages
                 group.getCreatedAt()
         );
     }
@@ -104,7 +106,10 @@ public class GroupService {
                 .map(GroupMember::getGroupId)
                 .collect(Collectors.toSet());
 
-        return groupPage.map(group -> toGroupDto(group, userGroupIds, adminGroupIds));
+        // Get unread counts
+        Map<Long, Long> unreadCounts = getUnreadCountsForUserGroups(userId);
+
+        return groupPage.map(group -> toGroupDto(group, userGroupIds, adminGroupIds, unreadCounts));
     }
 
     public Page<GroupDto> searchGroups(Long userId, String userCampus, String query, Pageable pageable) {
@@ -120,7 +125,10 @@ public class GroupService {
                 .map(GroupMember::getGroupId)
                 .collect(Collectors.toSet());
 
-        return groupPage.map(group -> toGroupDto(group, userGroupIds, adminGroupIds));
+        // Get unread counts
+        Map<Long, Long> unreadCounts = getUnreadCountsForUserGroups(userId);
+
+        return groupPage.map(group -> toGroupDto(group, userGroupIds, adminGroupIds, unreadCounts));
     }
 
     public GroupDto getGroupDetails(Long userId, Long groupId) {
@@ -137,7 +145,10 @@ public class GroupService {
                 .map(GroupMember::getGroupId)
                 .collect(Collectors.toSet());
 
-        return toGroupDto(group, userGroupIds, adminGroupIds);
+        // Get unread counts
+        Map<Long, Long> unreadCounts = getUnreadCountsForUserGroups(userId);
+
+        return toGroupDto(group, userGroupIds, adminGroupIds, unreadCounts);
     }
 
     public List<GroupMemberDto> getGroupMembers(Long userId, Long groupId) {
@@ -217,12 +228,15 @@ public class GroupService {
         groupMembers.deleteByGroupIdAndUserId(groupId, userId);
     }
 
-    private GroupDto toGroupDto(Group group, Set<Long> userGroupIds, Set<Long> adminGroupIds) {
+    private GroupDto toGroupDto(Group group, Set<Long> userGroupIds, Set<Long> adminGroupIds, Map<Long, Long> unreadCounts) {
         long memberCount = groupMembers.countByGroupId(group.getId());
 
         // Get creator info
         Profile creatorProfile = profiles.findById(group.getCreatorId()).orElse(null);
         String creatorName = creatorProfile != null ? creatorProfile.getDisplayName() : "Unknown";
+
+        // Get unread count for this group
+        long unreadCount = unreadCounts.getOrDefault(group.getId(), 0L);
 
         return new GroupDto(
                 group.getId(),
@@ -235,6 +249,7 @@ public class GroupService {
                 memberCount,
                 userGroupIds.contains(group.getId()),
                 adminGroupIds.contains(group.getId()),
+                unreadCount,
                 group.getCreatedAt()
         );
     }
@@ -309,5 +324,54 @@ public class GroupService {
                 message.getBody(),
                 message.getSentAt()
         );
+    }
+
+    /**
+     * Get unread message counts for all groups the user is a member of
+     * Returns a map of groupId -> unread count
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> getUnreadCountsForUserGroups(Long userId) {
+        log.info("Getting unread counts for user {}", userId);
+
+        // Get all groups user is a member of
+        List<GroupMember> memberships = groupMembers.findByUserId(userId);
+
+        Map<Long, Long> unreadCounts = new java.util.HashMap<>();
+
+        for (GroupMember membership : memberships) {
+            long count = groupMessages.countUnreadMessagesInGroup(
+                    membership.getGroupId(),
+                    userId,
+                    membership.getLastReadMessageId()
+            );
+
+            if (count > 0) {
+                unreadCounts.put(membership.getGroupId(), count);
+            }
+        }
+
+        return unreadCounts;
+    }
+
+    /**
+     * Mark all messages in a group as read for the current user
+     * Updates the lastReadMessageId to the latest message in the group
+     */
+    @Transactional
+    public void markGroupAsRead(Long userId, Long groupId) {
+        log.info("Marking group {} as read for user {}", groupId, userId);
+
+        // Verify user is a member
+        GroupMember membership = groupMembers.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new UnauthorizedException("You must be a member to mark messages as read"));
+
+        // Get the latest message ID in the group
+        Optional<Long> latestMessageId = groupMessages.findLatestMessageIdByGroupId(groupId);
+
+        if (latestMessageId.isPresent()) {
+            membership.setLastReadMessageId(latestMessageId.get());
+            groupMembers.save(membership);
+        }
     }
 }

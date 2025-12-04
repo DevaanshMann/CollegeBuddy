@@ -145,4 +145,30 @@ public class GroupController {
         GroupMessageDto message = groupService.sendGroupMessage(auth.id(), groupId, request);
         return ResponseEntity.ok(message);
     }
+
+    /**
+     * POST /groups/{groupId}/mark-read
+     * Mark all messages in a group as read
+     */
+    @PostMapping("/{groupId}/mark-read")
+    public ResponseEntity<Void> markGroupAsRead(@PathVariable Long groupId) {
+        AuthenticatedUser auth = SecurityUtils.getCurrentUser();
+        log.info("POST /groups/{}/mark-read - User: {}", groupId, auth.id());
+
+        groupService.markGroupAsRead(auth.id(), groupId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * GET /groups/unread-counts
+     * Get unread message counts for all user's groups
+     */
+    @GetMapping("/unread-counts")
+    public ResponseEntity<Map<Long, Long>> getUnreadCounts() {
+        AuthenticatedUser auth = SecurityUtils.getCurrentUser();
+        log.info("GET /groups/unread-counts - User: {}", auth.id());
+
+        Map<Long, Long> unreadCounts = groupService.getUnreadCountsForUserGroups(auth.id());
+        return ResponseEntity.ok(unreadCounts);
+    }
 }

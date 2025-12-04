@@ -23,6 +23,7 @@ import { GroupDetailPage } from './pages/Groups/GroupDetailPage';
 import { GroupChatPage } from './pages/Groups/GroupChatPage';
 import type { NotificationDto } from './types';
 import { apiClient } from './api/client';
+import { groupsApi, type GroupDto } from './api/groups';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -55,6 +56,7 @@ function AppContent() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadGroups, setUnreadGroups] = useState(0);
 
   // Public routes (no sidebar)
   const publicRoutes = ['/', '/login', '/signup', '/verify'];
@@ -80,11 +82,12 @@ function AppContent() {
 
   const loadNotifications = async () => {
     try {
-      const [connectionsData, conversationsData] = await Promise.all([
+      const [connectionsData, conversationsData, groupsData] = await Promise.all([
         apiClient.get<{
           incomingRequests: any[];
         }>('/connections'),
-        apiClient.get<any[]>('/messages/conversations')
+        apiClient.get<any[]>('/messages/conversations'),
+        groupsApi.getGroups(0, 100) // Get user's groups
       ]);
 
       // Convert connection requests to notifications
@@ -115,8 +118,21 @@ function AppContent() {
           isRead: false,
         }));
 
+      // Convert groups with unread messages to notifications
+      const groupNotifications: NotificationDto[] = groupsData.content
+        .filter((group: GroupDto) => group.isMember && group.unreadCount > 0)
+        .map((group: GroupDto) => ({
+          id: `group-${group.id}`,
+          type: 'NEW_GROUP_MESSAGE' as const,
+          groupId: group.id,
+          groupName: group.name,
+          message: `${group.unreadCount} new message${group.unreadCount > 1 ? 's' : ''} in ${group.name}`,
+          timestamp: new Date().toISOString(), // Groups don't have last message time in this response
+          isRead: false,
+        }));
+
       // Combine and sort by timestamp (most recent first)
-      const allNotifications = [...requestNotifications, ...messageNotifications].sort(
+      const allNotifications = [...requestNotifications, ...messageNotifications, ...groupNotifications].sort(
         (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
@@ -128,17 +144,26 @@ function AppContent() {
 
   const loadUnreadMessages = async () => {
     try {
-      const connectionsData = await apiClient.get<{
-        connections: any[];
-        unreadCounts: Record<number, number>;
-      }>('/connections');
+      const [connectionsData, groupUnreadCounts] = await Promise.all([
+        apiClient.get<{
+          connections: any[];
+          unreadCounts: Record<number, number>;
+        }>('/connections'),
+        groupsApi.getUnreadCounts()
+      ]);
 
       // Count number of people with unread messages, not total messages
-      const unreadCount = Object.values(connectionsData.unreadCounts || {}).filter(
+      const unreadMessagesCount = Object.values(connectionsData.unreadCounts || {}).filter(
         (count: number) => count > 0
       ).length;
 
-      setUnreadMessages(unreadCount);
+      // Count number of groups with unread messages
+      const unreadGroupsCount = Object.values(groupUnreadCounts || {}).filter(
+        (count: number) => count > 0
+      ).length;
+
+      setUnreadMessages(unreadMessagesCount);
+      setUnreadGroups(unreadGroupsCount);
     } catch (error) {
       console.error('Failed to load unread messages:', error);
     }
@@ -172,6 +197,9 @@ function AppContent() {
     if (notification.type === 'NEW_MESSAGE') {
       navigate(`/chat/${notification.userId}`);
       setShowNotifications(false);
+    } else if (notification.type === 'NEW_GROUP_MESSAGE' && notification.groupId) {
+      navigate(`/groups/${notification.groupId}/chat`);
+      setShowNotifications(false);
     }
   };
 
@@ -183,6 +211,7 @@ function AppContent() {
           onNotificationsClick={() => setShowNotifications(true)}
           unreadNotifications={notifications.filter(n => !n.isRead).length}
           unreadMessages={unreadMessages}
+          unreadGroups={unreadGroups}
         />
       )}
 

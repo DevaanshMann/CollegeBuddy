@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Search, Globe, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Plus, Search, Globe, Lock, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { groupsApi } from '../../api/groups';
 import type { GroupDto, CreateGroupRequest, Visibility } from '../../api/groups';
 import { Button, Modal } from '../../components/ui';
@@ -105,7 +105,7 @@ export function GroupsPage() {
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <form onSubmit={handleSearch} className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search groups..."
@@ -137,7 +137,7 @@ export function GroupsPage() {
       ) : groups.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
+            <Users className="w-8 h-8 text-gray-500 dark:text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
             {searchQuery ? 'No groups found' : 'No groups yet'}
@@ -160,15 +160,27 @@ export function GroupsPage() {
             {groups.map((group) => (
               <div
                 key={group.id}
-                className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg p-5 hover:border-blue-500 dark:hover:border-blue-500 transition-all cursor-pointer"
+                className="bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg p-5 hover:border-blue-500 dark:hover:border-blue-500 transition-all cursor-pointer relative"
                 onClick={() => navigate(`/groups/${group.id}`)}
               >
+                {/* Unread Badge */}
+                {group.isMember && group.unreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                    {group.unreadCount > 9 ? '9+' : group.unreadCount}
+                  </div>
+                )}
+
                 {/* Group Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary text-lg mb-1 truncate">
-                      {group.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-light-text-primary dark:text-dark-text-primary text-lg truncate">
+                        {group.name}
+                      </h3>
+                      {group.isMember && group.unreadCount > 0 && (
+                        <MessageSquare className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      )}
+                    </div>
                     <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">
                       by {group.creatorName}
                     </p>

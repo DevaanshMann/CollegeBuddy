@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
+import { X, UserPlus, UserCheck, MessageSquare, Users } from 'lucide-react';
 import { Avatar, Button } from './ui';
 import type { NotificationDto } from '../types';
 import { clsx } from 'clsx';
@@ -43,6 +43,8 @@ export function NotificationsPanel({
         return <UserCheck className="w-5 h-5 text-green-500" />;
       case 'NEW_MESSAGE':
         return <MessageSquare className="w-5 h-5 text-blue-500" />;
+      case 'NEW_GROUP_MESSAGE':
+        return <Users className="w-5 h-5 text-purple-500" />;
       default:
         return null;
     }
@@ -118,7 +120,7 @@ export function NotificationsPanel({
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                   <div className="w-16 h-16 bg-gray-100 dark:bg-dark-surface rounded-full flex items-center justify-center mb-4">
-                    <X className="w-8 h-8 text-gray-400" />
+                    <X className="w-8 h-8 text-gray-500 dark:text-gray-400" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2 text-light-text-primary dark:text-dark-text-primary">
                     No notifications
@@ -133,31 +135,43 @@ export function NotificationsPanel({
                     <div
                       key={notification.id}
                       onClick={() => {
-                        if (notification.type === 'NEW_MESSAGE') {
+                        if (notification.type === 'NEW_MESSAGE' || notification.type === 'NEW_GROUP_MESSAGE') {
                           onNotificationClick?.(notification);
                         }
                       }}
                       className={clsx(
                         'p-4 hover:bg-gray-50 dark:hover:bg-dark-surface transition-colors',
                         !notification.isRead && 'bg-blue-50 dark:bg-blue-900/10',
-                        notification.type === 'NEW_MESSAGE' && 'cursor-pointer'
+                        (notification.type === 'NEW_MESSAGE' || notification.type === 'NEW_GROUP_MESSAGE') && 'cursor-pointer'
                       )}
                     >
                       <div className="flex gap-3">
-                        <Avatar
-                          src={notification.userAvatar}
-                          alt={notification.userName}
-                          size="md"
-                          fallback={notification.userName}
-                        />
+                        {notification.type === 'NEW_GROUP_MESSAGE' ? (
+                          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                          </div>
+                        ) : (
+                          <Avatar
+                            src={notification.userAvatar}
+                            alt={notification.userName || 'User'}
+                            size="md"
+                            fallback={notification.userName || 'U'}
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2 mb-1">
                             {getNotificationIcon(notification.type)}
                             <div className="flex-1">
                               <p className="text-sm text-light-text-primary dark:text-dark-text-primary">
-                                <span className="font-semibold">{notification.userName}</span>
-                                {' '}
-                                {notification.message}
+                                {notification.type === 'NEW_GROUP_MESSAGE' ? (
+                                  <>{notification.message}</>
+                                ) : (
+                                  <>
+                                    <span className="font-semibold">{notification.userName}</span>
+                                    {' '}
+                                    {notification.message}
+                                  </>
+                                )}
                               </p>
                               <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
                                 {formatTimestamp(notification.timestamp)}
@@ -166,19 +180,19 @@ export function NotificationsPanel({
                           </div>
 
                           {/* Action buttons for connection requests */}
-                          {notification.type === 'CONNECTION_REQUEST' && (
+                          {notification.type === 'CONNECTION_REQUEST' && notification.userId && (
                             <div className="flex gap-2 mt-3">
                               <Button
                                 variant="primary"
                                 size="sm"
-                                onClick={() => onAcceptRequest?.(notification.userId)}
+                                onClick={() => onAcceptRequest?.(notification.userId!)}
                               >
                                 Accept
                               </Button>
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => onDeclineRequest?.(notification.userId)}
+                                onClick={() => onDeclineRequest?.(notification.userId!)}
                               >
                                 Decline
                               </Button>

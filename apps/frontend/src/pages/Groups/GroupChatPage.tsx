@@ -37,6 +37,12 @@ export function GroupChatPage() {
       setGroup(groupData);
       setMessages(messagesData);
 
+      // Mark messages as read
+      await groupsApi.markGroupAsRead(Number(groupId));
+
+      // Dispatch event to update notifications in parent (App.tsx)
+      window.dispatchEvent(new CustomEvent('messagesRead'));
+
       // Scroll to bottom
       setTimeout(() => scrollToBottom(), 100);
     } catch (error: any) {
@@ -130,7 +136,7 @@ export function GroupChatPage() {
           {messages.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
+                <Users className="w-8 h-8 text-gray-500 dark:text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
                 No messages yet
@@ -141,47 +147,53 @@ export function GroupChatPage() {
             </div>
           ) : (
             messages.map((message) => {
-              const isOwn = user?.id === message.senderId;
+              const isOwn = Number(user?.id) === Number(message.senderId);
 
               return (
                 <div
                   key={message.id}
                   className={clsx(
-                    'flex gap-3',
-                    isOwn ? 'flex-row-reverse' : 'flex-row'
+                    'flex w-full gap-2',
+                    isOwn ? 'justify-end' : 'justify-start'
                   )}
                 >
+                  {/* Avatar for incoming messages only */}
                   {!isOwn && (
                     <Avatar
                       src={message.senderAvatar}
                       alt={message.senderName}
                       size="sm"
                       fallback={message.senderName}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 mt-1"
                     />
                   )}
-                  <div className={clsx('flex flex-col', isOwn ? 'items-end' : 'items-start')}>
+
+                  {/* Message bubble */}
+                  <div className="flex flex-col max-w-[70%]">
                     {!isOwn && (
-                      <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-1 px-2">
+                      <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-1 ml-2">
                         {message.senderName}
                       </span>
                     )}
                     <div
                       className={clsx(
-                        'rounded-2xl px-4 py-2 max-w-md break-words',
+                        'rounded-2xl px-4 py-2 break-words',
                         isOwn
-                          ? 'bg-blue-500 text-white rounded-br-sm'
-                          : 'bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary rounded-bl-sm'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-light-surface dark:bg-dark-surface text-light-text-primary dark:text-dark-text-primary'
                       )}
                     >
-                      <p className="whitespace-pre-wrap">{message.body}</p>
+                      <p className="text-sm whitespace-pre-wrap">{message.body}</p>
+                      <p className={clsx(
+                        'text-xs mt-1',
+                        isOwn ? 'text-blue-100' : 'text-light-text-secondary dark:text-dark-text-secondary'
+                      )}>
+                        {new Date(message.sentAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
                     </div>
-                    <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1 px-2">
-                      {new Date(message.sentAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
                   </div>
                 </div>
               );

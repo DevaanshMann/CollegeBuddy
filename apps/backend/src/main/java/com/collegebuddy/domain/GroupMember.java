@@ -24,6 +24,9 @@ public class GroupMember {
     @Column(nullable = false)
     private Instant joinedAt;
 
+    @Column(name = "last_read_message_id")
+    private Long lastReadMessageId;
+
     public GroupMember() {
     }
 
@@ -65,5 +68,13 @@ public class GroupMember {
 
     public void setJoinedAt(Instant joinedAt) {
         this.joinedAt = joinedAt;
+    }
+
+    public Long getLastReadMessageId() {
+        return lastReadMessageId;
+    }
+
+    public void setLastReadMessageId(Long lastReadMessageId) {
+        this.lastReadMessageId = lastReadMessageId;
     }
 }

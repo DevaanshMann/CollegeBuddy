@@ -23,12 +23,14 @@ interface SidebarProps {
   onNotificationsClick: () => void;
   unreadNotifications?: number;
   unreadMessages?: number;
+  unreadGroups?: number;
 }
 
 export function Sidebar({
   onNotificationsClick,
   unreadNotifications = 0,
-  unreadMessages = 0
+  unreadMessages = 0,
+  unreadGroups = 0
 }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export function Sidebar({
   const navigationItems = [
     { icon: Home, label: 'Home', path: '/home' },
     { icon: Search, label: 'Search', path: '/search' },
-    { icon: Users, label: 'Groups', path: '/groups' },
+    { icon: Users, label: 'Groups', path: '/groups', badge: unreadGroups },
     { icon: MessageCircle, label: 'Messages', path: '/messages', badge: unreadMessages },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
