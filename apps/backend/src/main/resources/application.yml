@@ -10,9 +10,9 @@ spring:
     name: collegebuddy-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/collegebuddy
-    username: collegebuddy
-    password: collegebuddy
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/collegebuddy}
+    username: ${DB_USERNAME:collegebuddy}
+    password: ${DB_PASSWORD:collegebuddy}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -48,13 +48,13 @@ spring:
 
 collegebuddy:
   jwt:
-    secret: "dGhpc19pc19hX3Zlcnlfc2VjdXJlX3NlY3JldF9rZXlfZm9yX2p3dF90b2tlbl9zaWduaW5nXzI1Nl9iaXRz"
-    ttlSeconds: 3600
+    secret: ${JWT_SECRET}
+    ttlSeconds: ${JWT_TTL_SECONDS:3600}
 
   # Email delivery strategy: 'logging' (dev) or 'smtp' (prod)
   email:
     strategy: smtp
-    from: noreply@trial.sendgrid.net
+    from: noreply@collegebuddy.app
 
   # Frontend URL for email links
   frontend:
