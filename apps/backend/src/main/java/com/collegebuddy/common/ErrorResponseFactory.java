@@ -8,22 +8,8 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Factory for creating standardized ErrorResponse objects from exceptions.
- * Centralizes error response creation logic and ensures consistency.
- *
- * Implements Factory Pattern to encapsulate error response creation.
- */
 @Component
 public class ErrorResponseFactory {
-
-    /**
-     * Creates an ErrorResponse from any exception with appropriate error code and context.
-     *
-     * @param exception The exception to convert
-     * @param path The request path where the error occurred
-     * @return Structured ErrorResponse object
-     */
     public ErrorResponse createErrorResponse(Exception exception, String path) {
         if (exception instanceof InvalidEmailDomainException) {
             return createValidationError("INVALID_EMAIL_DOMAIN", exception.getMessage(), path);
@@ -62,9 +48,6 @@ public class ErrorResponseFactory {
         }
     }
 
-    /**
-     * Creates a validation error response (400 Bad Request category).
-     */
     private ErrorResponse createValidationError(String errorCode, String message, String path) {
         return ErrorResponse.builder()
                 .errorCode(errorCode)
@@ -74,9 +57,6 @@ public class ErrorResponseFactory {
                 .build();
     }
 
-    /**
-     * Creates an authentication/authorization error response (401/403 category).
-     */
     private ErrorResponse createAuthError(String errorCode, String message, String path) {
         return ErrorResponse.builder()
                 .errorCode(errorCode)
@@ -86,9 +66,6 @@ public class ErrorResponseFactory {
                 .build();
     }
 
-    /**
-     * Creates a conflict error response (409 Conflict category).
-     */
     private ErrorResponse createConflictError(String errorCode, String message, String path) {
         return ErrorResponse.builder()
                 .errorCode(errorCode)
@@ -98,9 +75,6 @@ public class ErrorResponseFactory {
                 .build();
     }
 
-    /**
-     * Creates a not found error response (404 Not Found category).
-     */
     private ErrorResponse createNotFoundError(String errorCode, String message, String path) {
         return ErrorResponse.builder()
                 .errorCode(errorCode)
@@ -110,9 +84,6 @@ public class ErrorResponseFactory {
                 .build();
     }
 
-    /**
-     * Creates an internal server error response (500 category).
-     */
     private ErrorResponse createInternalError(String errorCode, String message, String path) {
         return ErrorResponse.builder()
                 .errorCode(errorCode)
@@ -122,9 +93,6 @@ public class ErrorResponseFactory {
                 .build();
     }
 
-    /**
-     * Helper method to create details map.
-     */
     private Map<String, Object> createDetails(String key, Object value) {
         Map<String, Object> details = new HashMap<>();
         details.put(key, value);

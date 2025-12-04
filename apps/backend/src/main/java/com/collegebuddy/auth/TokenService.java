@@ -1,7 +1,6 @@
 package com.collegebuddy.auth;
 
 import com.collegebuddy.domain.AccountStatus;
-import com.collegebuddy.domain.User;
 import com.collegebuddy.domain.VerificationToken;
 import com.collegebuddy.repo.UserRepository;
 import com.collegebuddy.repo.VerificationTokenRepository;
@@ -63,7 +62,6 @@ public class TokenService {
             users.save(u);
         });
 
-        // optional cleanup: delete token so it can't be reused
         tokens.delete(vt);
     }
 }

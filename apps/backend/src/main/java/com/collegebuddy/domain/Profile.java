@@ -25,8 +25,6 @@ public class Profile {
     public Profile() {
     }
 
-    // getters & setters
-
     public Long getUserId() {
         return userId;
     }

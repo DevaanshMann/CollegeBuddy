@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Standardized error response structure for all API errors.
- * Provides consistent format for clients to handle errors.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ErrorResponse {
 
@@ -45,10 +41,6 @@ public class ErrorResponse {
         return details;
     }
 
-    /**
-     * Builder for creating ErrorResponse instances.
-     * Uses builder pattern for flexible, readable construction.
-     */
     public static class Builder {
         private String errorCode;
         private String message;

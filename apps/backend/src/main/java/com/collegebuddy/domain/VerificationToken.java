@@ -24,8 +24,6 @@ public class VerificationToken {
     public VerificationToken() {
     }
 
-    // getters & setters
-
     public Long getId() {
         return id;
     }
