@@ -28,7 +28,13 @@ export function AdminDashboardPage() {
       ]);
 
       setStats(statsData);
-      setUsers(usersData.content);
+      // Sort users: Admins first, then by ID
+      const sortedUsers = [...usersData.content].sort((a, b) => {
+        if (a.role === 'ADMIN' && b.role !== 'ADMIN') return -1;
+        if (a.role !== 'ADMIN' && b.role === 'ADMIN') return 1;
+        return a.userId - b.userId;
+      });
+      setUsers(sortedUsers);
       setTotalPages(usersData.totalPages);
     } catch (err: any) {
       console.error('Failed to load admin data:', err);
