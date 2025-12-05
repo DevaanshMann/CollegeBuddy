@@ -15,6 +15,7 @@ export interface GroupDto {
   memberCount: number;
   isMember: boolean;
   isAdmin: boolean;
+  unreadCount: number;
   createdAt: string;
 }
 
@@ -105,4 +106,17 @@ export const groupsApi = {
    */
   sendGroupMessage: (groupId: number, request: SendGroupMessageRequest) =>
     apiClient.post<GroupMessageDto>(`/groups/${groupId}/messages`, request),
+
+  /**
+   * Mark all messages in a group as read
+   */
+  markGroupAsRead: (groupId: number) =>
+    apiClient.post(`/groups/${groupId}/mark-read`),
+
+  /**
+   * Get unread message counts for all user's groups
+   * Returns a map of groupId -> unread count
+   */
+  getUnreadCounts: () =>
+    apiClient.get<Record<number, number>>('/groups/unread-counts'),
 };
