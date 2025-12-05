@@ -17,11 +17,12 @@ type SearchResult = {
 
 type ConnectionStatus = 'you' | 'connected' | 'pending' | 'connect';
 
-const RECENT_SEARCHES_KEY = 'collegebuddy_recent_searches';
 const MAX_RECENT_SEARCHES = 10;
 
 export function SearchPage() {
   const { user } = useAuth();
+  // Make search history user-specific
+  const RECENT_SEARCHES_KEY = `collegebuddy_recent_searches_${user?.id || 'guest'}`;
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -40,6 +41,13 @@ export function SearchPage() {
     loadConnections();
     loadBlockedUsers();
   }, []);
+
+  // Clear results when search query is emptied
+  useEffect(() => {
+    if (query.trim() === '') {
+      setResults([]);
+    }
+  }, [query]);
 
   const loadRecentSearches = () => {
     try {
