@@ -42,6 +42,7 @@ export function ConnectionsPage() {
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState<{ userId: number; displayName: string } | null>(null);
+    const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
 
     // All sections start collapsed
     const [friendsOpen, setFriendsOpen] = useState(false);
@@ -51,6 +52,7 @@ export function ConnectionsPage() {
 
     useEffect(() => {
         void loadConnections();
+        void loadBlockedUsers();
     }, []);
 
     async function loadConnections() {
@@ -106,14 +108,35 @@ export function ConnectionsPage() {
         }
     }
 
+    async function loadBlockedUsers() {
+        try {
+            const blocked = await blockingApi.getBlockedUsers();
+            setBlockedUsers(blocked.map((b) => b.userId));
+        } catch (err: any) {
+            console.error("Failed to load blocked users:", err);
+        }
+    }
+
     async function handleBlock(userId: number, displayName: string) {
         try {
             await blockingApi.blockUser(userId);
-            toast.success(`Blocked ${displayName}`);
+            toast.success(`Blocked ${displayName}. Connection removed.`);
             await loadConnections();
+            await loadBlockedUsers();
         } catch (err: any) {
             console.error("Block error:", err);
             toast.error(err.message ?? "Failed to block user");
+        }
+    }
+
+    async function handleUnblock(userId: number, displayName: string) {
+        try {
+            await blockingApi.unblockUser(userId);
+            toast.success(`Unblocked ${displayName}`);
+            await loadBlockedUsers();
+        } catch (err: any) {
+            console.error("Unblock error:", err);
+            toast.error(err.message ?? "Failed to unblock user");
         }
     }
 
@@ -201,24 +224,35 @@ export function ConnectionsPage() {
                                                 )}
                                             </div>
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => navigate(`/chat/${f.userId}`)}
-                                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                                >
-                                                    Message
-                                                </button>
-                                                <button
-                                                    onClick={() => handleBlock(f.userId, f.displayName)}
-                                                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                                                >
-                                                    Block
-                                                </button>
-                                                <button
-                                                    onClick={() => showDisconnectConfirm(f.userId, f.displayName)}
-                                                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                                                >
-                                                    Disconnect
-                                                </button>
+                                                {blockedUsers.includes(f.userId) ? (
+                                                    <button
+                                                        onClick={() => handleUnblock(f.userId, f.displayName)}
+                                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                                    >
+                                                        Unblock
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => navigate(`/chat/${f.userId}`)}
+                                                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                                        >
+                                                            Message
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleBlock(f.userId, f.displayName)}
+                                                            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                        >
+                                                            Block
+                                                        </button>
+                                                        <button
+                                                            onClick={() => showDisconnectConfirm(f.userId, f.displayName)}
+                                                            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                                        >
+                                                            Disconnect
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     );

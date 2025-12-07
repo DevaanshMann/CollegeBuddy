@@ -4,15 +4,18 @@ import com.collegebuddy.common.exceptions.BlockAlreadyExistsException;
 import com.collegebuddy.common.exceptions.BlockNotFoundException;
 import com.collegebuddy.common.exceptions.InvalidBlockActionException;
 import com.collegebuddy.common.exceptions.UserNotFoundException;
+import com.collegebuddy.connection.ConnectionService;
 import com.collegebuddy.domain.BlockedUser;
 import com.collegebuddy.domain.Profile;
 import com.collegebuddy.domain.User;
 import com.collegebuddy.dto.BlockedUserDto;
 import com.collegebuddy.repo.BlockedUserRepository;
+import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ProfileRepository;
 import com.collegebuddy.repo.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +30,19 @@ public class BlockingService {
     private final BlockedUserRepository blockedUserRepository;
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
+    private final ConnectionRepository connectionRepository;
+    private final ConnectionService connectionService;
 
     public BlockingService(BlockedUserRepository blockedUserRepository,
                           UserRepository userRepository,
-                          ProfileRepository profileRepository) {
+                          ProfileRepository profileRepository,
+                          ConnectionRepository connectionRepository,
+                          @Lazy ConnectionService connectionService) {
         this.blockedUserRepository = blockedUserRepository;
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
+        this.connectionRepository = connectionRepository;
+        this.connectionService = connectionService;
     }
 
     /**
@@ -59,6 +68,18 @@ public class BlockingService {
         // Check if already blocked
         if (blockedUserRepository.existsByBlockerIdAndBlockedId(blockerId, userIdToBlock)) {
             throw new BlockAlreadyExistsException("User is already blocked");
+        }
+
+        // Remove existing connection if any
+        long a = Math.min(blockerId, userIdToBlock);
+        long b = Math.max(blockerId, userIdToBlock);
+        if (connectionRepository.existsByUserAIdAndUserBId(a, b)) {
+            log.info("Removing connection between user {} and user {} before blocking", blockerId, userIdToBlock);
+            try {
+                connectionService.disconnect(blockerId, userIdToBlock);
+            } catch (Exception e) {
+                log.warn("Failed to disconnect users during block, continuing with block: {}", e.getMessage());
+            }
         }
 
         // Create block
