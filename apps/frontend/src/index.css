@@ -78,6 +78,10 @@
     background-color: rgb(var(--color-surface)) !important;
   }
 
+  .dark\:hover\:bg-dark-surface:hover {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
   /* Borders */
   .border-light-border {
     border-color: rgb(var(--color-border)) !important;
