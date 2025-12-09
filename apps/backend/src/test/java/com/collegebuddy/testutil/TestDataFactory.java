@@ -99,7 +99,21 @@ public class TestDataFactory {
         return msg;
     }
 
+    public static User createAdminUser(String email, String campusDomain) {
+        User u = new User();
+        u.setEmail(email);
+        u.setHashedPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+        u.setCampusDomain(campusDomain);
+        u.setStatus(AccountStatus.ACTIVE);
+        u.setRole(Role.ADMIN);
+        return u;
+    }
+
     public static String getDefaultPassword() {
         return DEFAULT_PASSWORD;
+    }
+
+    public static BCryptPasswordEncoder getPasswordEncoder() {
+        return passwordEncoder;
     }
 }

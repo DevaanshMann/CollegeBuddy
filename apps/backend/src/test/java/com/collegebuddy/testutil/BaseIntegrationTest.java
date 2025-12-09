@@ -43,12 +43,32 @@ public abstract class BaseIntegrationTest {
     @Autowired
     protected MessageRepository messageRepository;
 
+    @Autowired(required = false)
+    protected com.collegebuddy.repo.BlockedUserRepository blockedUserRepository;
+
+    @Autowired(required = false)
+    protected com.collegebuddy.repo.VerificationTokenRepository verificationTokenRepository;
+
+    @Autowired(required = false)
+    protected com.collegebuddy.repo.PasswordResetTokenRepository passwordResetTokenRepository;
+
     @BeforeEach
     void cleanDatabase() {
         messageRepository.deleteAll();
         conversationRepository.deleteAll();
         connectionRepository.deleteAll();
         connectionRequestRepository.deleteAll();
+
+        if (blockedUserRepository != null) {
+            blockedUserRepository.deleteAll();
+        }
+        if (verificationTokenRepository != null) {
+            verificationTokenRepository.deleteAll();
+        }
+        if (passwordResetTokenRepository != null) {
+            passwordResetTokenRepository.deleteAll();
+        }
+
         profileRepository.deleteAll();
         userRepository.deleteAll();
     }
