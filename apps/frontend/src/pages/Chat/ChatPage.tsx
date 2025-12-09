@@ -149,7 +149,7 @@ export function ChatPage() {
               placeholder="Search messages"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input"
+              className="input pl-10"
             />
           </div>
         </div>
