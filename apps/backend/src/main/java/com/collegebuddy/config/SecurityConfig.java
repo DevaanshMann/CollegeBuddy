@@ -1,6 +1,7 @@
 package com.collegebuddy.config;
 
 import com.collegebuddy.security.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,10 +20,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Configuration
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+
+    @Value("${collegebuddy.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -30,7 +37,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // BCrypt is standard for hashing user passwords in Spring Security
         return new BCryptPasswordEncoder();
     }
 
@@ -43,27 +49,37 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        // Public endpoints (signup/login/verify/resend + static files)
         RequestMatcher publicEndpoints = new OrRequestMatcher(
                 new AntPathRequestMatcher("/auth/signup"),
                 new AntPathRequestMatcher("/auth/login"),
                 new AntPathRequestMatcher("/auth/verify"),
                 new AntPathRequestMatcher("/auth/resend"),
-                new AntPathRequestMatcher("/uploads/avatars/**")
+                new AntPathRequestMatcher("/auth/forgot-password"),
+                new AntPathRequestMatcher("/auth/reset-password"),
+                new AntPathRequestMatcher("/uploads/avatars/**"),
+                new AntPathRequestMatcher("/actuator/health"),
+                new AntPathRequestMatcher("/actuator/health/**")
         );
 
         http
-                // This is an API, no browser session/state
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())              // 👈 enable our CorsConfigurationSource
+                .cors(Customizer.withDefaults())
                 .sessionManagement(sess ->
                         sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .headers(headers -> headers
+                        .xssProtection(Customizer.withDefaults())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+                        .frameOptions(frame -> frame.deny())
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
                 )
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(publicEndpoints).permitAll()
                         .anyRequest().authenticated()
                 )
-                // We’re not using form login/basic auth
                 .httpBasic(Customizer.withDefaults())
                 .formLogin(form -> form.disable());
 
@@ -76,11 +92,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(java.util.List.of(
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "http://localhost:5174"
-        ));
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         config.setAllowedHeaders(java.util.List.of("*"));
         config.setAllowCredentials(true);

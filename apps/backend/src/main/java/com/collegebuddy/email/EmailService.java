@@ -52,6 +52,31 @@ public class EmailService {
     }
 
     /**
+     * Sends a password reset email with a token link.
+     *
+     * @param toAddress The recipient email address
+     * @param tokenValue The password reset token
+     */
+    public void sendPasswordResetEmail(String toAddress, String tokenValue) {
+        String resetLink = frontendUrl + "/reset-password?token=" + tokenValue;
+
+        EmailMessage message = EmailMessage.builder()
+                .to(toAddress)
+                .subject("Reset your CollegeBuddy password")
+                .body(buildPasswordResetEmailBody(resetLink))
+                .html(true)
+                .build();
+
+        try {
+            deliveryStrategy.send(message);
+            log.info("Password reset email sent to: {}", toAddress);
+        } catch (EmailDeliveryException e) {
+            log.error("Failed to send password reset email to: {}", toAddress, e);
+            throw e;
+        }
+    }
+
+    /**
      * Sends a notification email.
      *
      * @param toAddress The recipient email address
@@ -89,6 +114,24 @@ public class EmailService {
                 </body>
                 </html>
                 """.formatted(verificationLink);
+    }
+
+    /**
+     * Builds HTML body for password reset email.
+     */
+    private String buildPasswordResetEmailBody(String resetLink) {
+        return """
+                <html>
+                <body>
+                    <h2>Reset Your Password</h2>
+                    <p>We received a request to reset your CollegeBuddy password.</p>
+                    <p>Click the link below to reset your password:</p>
+                    <p><a href="%s">Reset Password</a></p>
+                    <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                    <p>This link will expire in 15 minutes.</p>
+                </body>
+                </html>
+                """.formatted(resetLink);
     }
 }
 

@@ -9,37 +9,57 @@ import com.collegebuddy.dto.*;
 import com.collegebuddy.email.EmailService;
 import com.collegebuddy.repo.UserRepository;
 import com.collegebuddy.repo.VerificationTokenRepository;
+import com.collegebuddy.repo.PasswordResetTokenRepository;
 import com.collegebuddy.repo.ProfileRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository users;
     private final VerificationTokenRepository tokens;
+    private final PasswordResetTokenRepository passwordResetTokens;
     private final PasswordEncoder encoder;
     private final TokenService tokenService;
     private final EmailService emailService;
     private final com.collegebuddy.security.JwtService jwtService;
     private final ProfileRepository profiles;
+    private final UserDtoMapper userDtoMapper;
 
     public AuthService(UserRepository users,
                        VerificationTokenRepository tokens,
+                       PasswordResetTokenRepository passwordResetTokens,
                        PasswordEncoder encoder,
                        TokenService tokenService,
                        EmailService emailService,
                        com.collegebuddy.security.JwtService jwtService,
-                       ProfileRepository profiles) {
+                       ProfileRepository profiles,
+                       UserDtoMapper userDtoMapper) {
         this.users = users;
         this.tokens = tokens;
+        this.passwordResetTokens = passwordResetTokens;
         this.encoder = encoder;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.jwtService = jwtService;
         this.profiles = profiles;
+        this.userDtoMapper = userDtoMapper;
+    }
+
+    public UserDto getUserById(Long userId) {
+        User user = users.findById(userId)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+        return userDtoMapper.toDto(user);
     }
 
     public AuthResponse signup(SignupRequest request) {
@@ -62,10 +82,18 @@ public class AuthService {
 
         String tokenValue = tokenService.generateVerificationToken(saved.getId());
 
-        emailService.sendVerificationEmail(
-                saved.getEmail(),
-                tokenValue
-        );
+        // Try to send verification email, but don't fail signup if email fails
+        try {
+            emailService.sendVerificationEmail(
+                    saved.getEmail(),
+                    tokenValue
+            );
+            log.info("Verification email sent successfully to {}", saved.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send verification email to {}. User can request resend later. Error: {}",
+                    saved.getEmail(), e.getMessage());
+            // Don't throw - allow signup to succeed even if email fails
+        }
 
         return new AuthResponse("pending", null);
     }
@@ -122,9 +150,73 @@ public class AuthService {
         }
 
         String tokenValue = tokenService.generateVerificationToken(u.getId());
-        emailService.sendVerificationEmail(
-                u.getEmail(),
-                tokenValue
-        );
+
+        // Try to send verification email, but don't fail if email service is down
+        try {
+            emailService.sendVerificationEmail(
+                    u.getEmail(),
+                    tokenValue
+            );
+            log.info("Resent verification email to {}", u.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to resend verification email to {}. Error: {}",
+                    u.getEmail(), e.getMessage());
+            // Don't throw - just log the error
+        }
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+        Optional<User> userOpt = users.findByEmail(request.email());
+        if (userOpt.isEmpty()) {
+            // Don't reveal if email exists or not - security best practice
+            return;
+        }
+
+        User user = userOpt.get();
+
+        // Generate reset token (15 minutes expiration)
+        String tokenValue = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setToken(tokenValue);
+        resetToken.setUserId(user.getId());
+        resetToken.setExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
+        passwordResetTokens.save(resetToken);
+
+        // Send password reset email
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), tokenValue);
+            log.info("Password reset email sent to {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to {}. Error: {}",
+                    user.getEmail(), e.getMessage());
+            // Don't throw - just log the error
+        }
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokens.findByToken(request.token());
+        if (tokenOpt.isEmpty()) {
+            throw new InvalidVerificationTokenException("Invalid or expired reset token");
+        }
+
+        PasswordResetToken resetToken = tokenOpt.get();
+        if (resetToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new InvalidVerificationTokenException("Invalid or expired reset token");
+        }
+
+        // Update user password
+        Optional<User> userOpt = users.findById(resetToken.getUserId());
+        if (userOpt.isEmpty()) {
+            throw new UnauthorizedException("User not found");
+        }
+
+        User user = userOpt.get();
+        user.setHashedPassword(encoder.encode(request.newPassword()));
+        users.save(user);
+
+        // Delete the used token
+        passwordResetTokens.delete(resetToken);
+
+        log.info("Password reset successfully for user {}", user.getEmail());
     }
 }
