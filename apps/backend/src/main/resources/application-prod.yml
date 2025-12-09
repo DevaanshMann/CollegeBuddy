@@ -1,0 +1,32 @@
+# Production-specific configuration
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    validate-on-migrate: true
+
+logging:
+  level:
+    com.collegebuddy: INFO
+    org.springframework.security: WARN
+    org.flywaydb: INFO
+    org.hibernate: WARN
+
+collegebuddy:
+  email:
+    strategy: smtp  # Always use SMTP in production, not logging
+
+management:
+  endpoint:
+    health:
+      show-details: never  # Don't expose detailed health info in production
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # Only expose essential endpoints

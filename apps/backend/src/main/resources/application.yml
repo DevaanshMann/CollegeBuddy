@@ -1,5 +1,8 @@
 server:
   port: 8081
+  tomcat:
+    max-swallow-size: 10MB
+    max-http-form-post-size: 10MB
 
 spring:
   servlet:
@@ -14,6 +17,12 @@ spring:
     username: ${DB_USERNAME:collegebuddy}
     password: ${DB_PASSWORD:collegebuddy}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
@@ -51,22 +60,43 @@ collegebuddy:
     secret: ${JWT_SECRET}
     ttlSeconds: ${JWT_TTL_SECONDS:3600}
 
-  # Email delivery strategy: 'logging' (dev) or 'smtp' (prod)
+  # Email delivery strategy: 'logging' (dev) or 'smtp' (production)
   email:
-    strategy: smtp
-    from: noreply@collegebuddy.app
+    strategy: ${EMAIL_STRATEGY:smtp}
+    from: ${EMAIL_FROM:noreply@collegebuddy.app}
 
   # Frontend URL for email links
   frontend:
-    url: http://localhost:3000
+    url: ${FRONTEND_URL:http://localhost:3000}
+
+  # CORS configuration
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174}
 
   # Storage configuration
   storage:
     local:
-      upload-dir: uploads/avatars/
+      upload-dir: ${UPLOAD_DIR:uploads/avatars/}
 
 logging:
   level:
-    com.collegebuddy: DEBUG
-    org.springframework.security: DEBUG
-    org.flywaydb: DEBUG
+    com.collegebuddy: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    org.flywaydb: ${FLYWAY_LOG_LEVEL:INFO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
