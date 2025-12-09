@@ -1,6 +1,12 @@
 package com.collegebuddy.integration;
 
-import com.collegebuddy.domain.*;
+import com.collegebuddy.domain.BlockedUser;
+import com.collegebuddy.domain.Connection;
+import com.collegebuddy.domain.ConnectionRequest;
+import com.collegebuddy.domain.ConnectionRequestStatus;
+import com.collegebuddy.domain.Conversation;
+import com.collegebuddy.domain.Profile;
+import com.collegebuddy.domain.User;
 import com.collegebuddy.dto.BlockUserRequest;
 import com.collegebuddy.dto.SendConnectionRequestDto;
 import com.collegebuddy.testutil.BaseIntegrationTest;
@@ -10,8 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-
-import java.time.Instant;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;

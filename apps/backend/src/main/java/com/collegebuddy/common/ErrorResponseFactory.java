@@ -1,6 +1,18 @@
 package com.collegebuddy.common;
 
-import com.collegebuddy.common.exceptions.*;
+import com.collegebuddy.common.exceptions.AlreadyConnectedException;
+import com.collegebuddy.common.exceptions.ConnectionAlreadyExistsException;
+import com.collegebuddy.common.exceptions.ConnectionNotFoundException;
+import com.collegebuddy.common.exceptions.ConnectionRequestNotFoundException;
+import com.collegebuddy.common.exceptions.EmailAlreadyInUseException;
+import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
+import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
+import com.collegebuddy.common.exceptions.InvalidEmailDomainException;
+import com.collegebuddy.common.exceptions.InvalidVerificationTokenException;
+import com.collegebuddy.common.exceptions.MessagePermissionException;
+import com.collegebuddy.common.exceptions.MessagingNotAllowedException;
+import com.collegebuddy.common.exceptions.ProfileVisibilityException;
+import com.collegebuddy.common.exceptions.UnauthorizedException;
 import com.collegebuddy.email.EmailDeliveryException;
 import com.collegebuddy.media.StorageException;
 import org.springframework.stereotype.Component;

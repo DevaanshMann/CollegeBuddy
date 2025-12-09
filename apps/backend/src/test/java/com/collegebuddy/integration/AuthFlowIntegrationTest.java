@@ -1,7 +1,16 @@
 package com.collegebuddy.integration;
 
-import com.collegebuddy.domain.*;
-import com.collegebuddy.dto.*;
+import com.collegebuddy.domain.AccountStatus;
+import com.collegebuddy.domain.PasswordResetToken;
+import com.collegebuddy.domain.Profile;
+import com.collegebuddy.domain.User;
+import com.collegebuddy.domain.VerificationToken;
+import com.collegebuddy.dto.ForgotPasswordRequest;
+import com.collegebuddy.dto.LoginRequest;
+import com.collegebuddy.dto.ResendVerificationRequest;
+import com.collegebuddy.dto.ResetPasswordRequest;
+import com.collegebuddy.dto.SignupRequest;
+import com.collegebuddy.dto.VerifyEmailRequest;
 import com.collegebuddy.testutil.BaseIntegrationTest;
 import com.collegebuddy.testutil.TestDataFactory;
 import org.junit.jupiter.api.DisplayName;

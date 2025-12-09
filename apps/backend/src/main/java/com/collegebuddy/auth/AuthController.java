@@ -1,10 +1,21 @@
 package com.collegebuddy.auth;
 
-import com.collegebuddy.dto.*;
+import com.collegebuddy.dto.AuthResponse;
+import com.collegebuddy.dto.ForgotPasswordRequest;
+import com.collegebuddy.dto.LoginRequest;
+import com.collegebuddy.dto.ResendVerificationRequest;
+import com.collegebuddy.dto.ResetPasswordRequest;
+import com.collegebuddy.dto.SignupRequest;
+import com.collegebuddy.dto.UserDto;
+import com.collegebuddy.dto.VerifyEmailRequest;
 import com.collegebuddy.security.AuthenticatedUser;
 import com.collegebuddy.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")

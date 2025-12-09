@@ -1,6 +1,15 @@
 package com.collegebuddy.testutil;
 
-import com.collegebuddy.domain.*;
+import com.collegebuddy.domain.AccountStatus;
+import com.collegebuddy.domain.Connection;
+import com.collegebuddy.domain.ConnectionRequest;
+import com.collegebuddy.domain.ConnectionRequestStatus;
+import com.collegebuddy.domain.Conversation;
+import com.collegebuddy.domain.Message;
+import com.collegebuddy.domain.Profile;
+import com.collegebuddy.domain.Role;
+import com.collegebuddy.domain.User;
+import com.collegebuddy.domain.Visibility;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.Instant;

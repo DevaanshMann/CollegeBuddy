@@ -1,6 +1,22 @@
 package com.collegebuddy.common;
 
-import com.collegebuddy.common.exceptions.*;
+import com.collegebuddy.common.exceptions.AlreadyConnectedException;
+import com.collegebuddy.common.exceptions.BlockAlreadyExistsException;
+import com.collegebuddy.common.exceptions.BlockNotFoundException;
+import com.collegebuddy.common.exceptions.ConnectionAlreadyExistsException;
+import com.collegebuddy.common.exceptions.ConnectionNotFoundException;
+import com.collegebuddy.common.exceptions.ConnectionRequestNotFoundException;
+import com.collegebuddy.common.exceptions.EmailAlreadyInUseException;
+import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
+import com.collegebuddy.common.exceptions.InvalidBlockActionException;
+import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
+import com.collegebuddy.common.exceptions.InvalidEmailDomainException;
+import com.collegebuddy.common.exceptions.InvalidVerificationTokenException;
+import com.collegebuddy.common.exceptions.MessagePermissionException;
+import com.collegebuddy.common.exceptions.MessagingNotAllowedException;
+import com.collegebuddy.common.exceptions.ProfileVisibilityException;
+import com.collegebuddy.common.exceptions.UnauthorizedException;
+import com.collegebuddy.common.exceptions.UserNotFoundException;
 import com.collegebuddy.email.EmailDeliveryException;
 import com.collegebuddy.media.StorageException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,12 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Global exception handler so controllers can just throw.
- * Now uses ErrorResponseFactory for consistent, structured error responses.
- */
 @RestControllerAdvice
 public class ErrorHandler {
 
@@ -126,6 +139,38 @@ public class ErrorHandler {
         log.warn("Message permission denied: {}", ex.getMessage());
         ErrorResponse error = errorResponseFactory.createErrorResponse(ex, request.getRequestURI());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(BlockAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleBlockAlreadyExists(
+            BlockAlreadyExistsException ex, HttpServletRequest request) {
+        log.info("Block already exists: {}", ex.getMessage());
+        ErrorResponse error = errorResponseFactory.createErrorResponse(ex, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(BlockNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleBlockNotFound(
+            BlockNotFoundException ex, HttpServletRequest request) {
+        log.info("Block not found: {}", ex.getMessage());
+        ErrorResponse error = errorResponseFactory.createErrorResponse(ex, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(InvalidBlockActionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidBlockAction(
+            InvalidBlockActionException ex, HttpServletRequest request) {
+        log.warn("Invalid block action: {}", ex.getMessage());
+        ErrorResponse error = errorResponseFactory.createErrorResponse(ex, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(
+            UserNotFoundException ex, HttpServletRequest request) {
+        log.info("User not found: {}", ex.getMessage());
+        ErrorResponse error = errorResponseFactory.createErrorResponse(ex, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

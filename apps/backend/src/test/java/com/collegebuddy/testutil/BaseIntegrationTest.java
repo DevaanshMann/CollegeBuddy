@@ -1,6 +1,11 @@
 package com.collegebuddy.testutil;
 
-import com.collegebuddy.repo.*;
+import com.collegebuddy.repo.ConnectionRepository;
+import com.collegebuddy.repo.ConnectionRequestRepository;
+import com.collegebuddy.repo.ConversationRepository;
+import com.collegebuddy.repo.MessageRepository;
+import com.collegebuddy.repo.ProfileRepository;
+import com.collegebuddy.repo.UserRepository;
 import com.collegebuddy.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

@@ -6,7 +6,11 @@ import com.collegebuddy.common.exceptions.ConnectionRequestNotFoundException;
 import com.collegebuddy.common.exceptions.ForbiddenCampusAccessException;
 import com.collegebuddy.common.exceptions.InvalidConnectionActionException;
 import com.collegebuddy.common.exceptions.UnauthorizedException;
-import com.collegebuddy.domain.*;
+import com.collegebuddy.domain.Connection;
+import com.collegebuddy.domain.ConnectionRequest;
+import com.collegebuddy.domain.ConnectionRequestStatus;
+import com.collegebuddy.domain.Profile;
+import com.collegebuddy.domain.User;
 import com.collegebuddy.dto.ConnectionRequestDto;
 import com.collegebuddy.dto.ConnectionStatusDto;
 import com.collegebuddy.dto.RespondToConnectionDto;
@@ -28,7 +32,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
