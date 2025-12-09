@@ -190,21 +190,13 @@ export function Sidebar({
 
         {/* User Info */}
         {user && (
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
-            <Avatar
-              src={user.avatarUrl}
-              alt={user.displayName}
-              size="sm"
-              fallback={user.displayName}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-light-text-primary dark:text-dark-text-primary">
-                {user.displayName}
-              </p>
-              <p className="text-xs truncate text-light-text-secondary dark:text-dark-text-secondary">
-                @{user.campusDomain}
-              </p>
-            </div>
+          <div className="px-3 py-2 rounded-lg">
+            <p className="text-sm font-medium truncate text-light-text-primary dark:text-dark-text-primary">
+              {user.displayName}
+            </p>
+            <p className="text-xs truncate text-light-text-secondary dark:text-dark-text-secondary">
+              @{user.campusDomain}
+            </p>
           </div>
         )}
       </div>
