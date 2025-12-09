@@ -268,6 +268,7 @@ export interface InputProps {
   disabled?: boolean;
   required?: boolean;
   className?: string;
+  showPasswordToggle?: boolean;
 }
 
 export interface TextAreaProps {

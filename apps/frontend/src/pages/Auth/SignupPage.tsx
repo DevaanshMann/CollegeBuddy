@@ -67,6 +67,7 @@ export function SignupPage() {
             onChange={setPassword}
             required
             placeholder="Create a password"
+            showPasswordToggle
           />
 
           <Input
