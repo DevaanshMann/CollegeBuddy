@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     List<User> findByCampusDomainAndStatus(String campusDomain, AccountStatus status);
+
+    long countByStatus(AccountStatus status);
 }

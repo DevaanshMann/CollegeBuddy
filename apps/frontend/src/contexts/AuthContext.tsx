@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthContextType, UserDto } from '../types';
-import { JWT_STORAGE_KEY } from '../config';
+import { JWT_STORAGE_KEY, API_BASE_URL } from '../config';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -11,24 +11,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const [user, setUser] = useState<UserDto | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Decode token and set user if token exists
+    // Fetch user data from backend if token exists
     if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({
-          id: payload.sub,
-          email: payload.email || '',
-          displayName: payload.displayName || '',
-          campusDomain: payload.campusDomain || '',
-          profileVisibility: 'PUBLIC',
-          role: payload.role || 'STUDENT'
+      fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Failed to fetch user');
+          }
+          return res.json();
+        })
+        .then((userData: UserDto) => {
+          setUser(userData);
+          setLoading(false);
+        })
+        .catch(() => {
+          // Invalid or expired token, clear it
+          localStorage.removeItem(JWT_STORAGE_KEY);
+          setToken(null);
+          setUser(null);
+          setLoading(false);
         });
-      } catch (error) {
-        // Invalid token, clear it
-        logout();
-      }
+    } else {
+      setLoading(false);
     }
   }, [token]);
 
@@ -42,13 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(JWT_STORAGE_KEY);
     setToken(null);
     setUser(null);
+    setLoading(false);
   };
 
   const isAuthenticated = !!token && !!user;
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
