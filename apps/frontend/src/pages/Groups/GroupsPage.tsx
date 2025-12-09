@@ -187,9 +187,9 @@ export function GroupsPage() {
                   </div>
                   <div className="flex-shrink-0 ml-2">
                     {group.visibility === 'PUBLIC' ? (
-                      <Globe className="w-5 h-5 text-green-500" title="Public" />
+                      <Globe className="w-5 h-5 text-green-500" />
                     ) : (
-                      <Lock className="w-5 h-5 text-gray-500" title="Private" />
+                      <Lock className="w-5 h-5 text-gray-500" />
                     )}
                   </div>
                 </div>
@@ -213,16 +213,15 @@ export function GroupsPage() {
                       Joined
                     </span>
                   ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleJoinGroup(group.id);
-                      }}
-                    >
-                      Join
-                    </Button>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleJoinGroup(group.id)}
+                      >
+                        Join
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>

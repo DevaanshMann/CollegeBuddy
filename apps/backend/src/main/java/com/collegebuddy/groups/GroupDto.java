@@ -14,6 +14,7 @@ public record GroupDto(
         long memberCount,
         boolean isMember,
         boolean isAdmin,
+        long unreadCount,
         Instant createdAt
 ) {
 }

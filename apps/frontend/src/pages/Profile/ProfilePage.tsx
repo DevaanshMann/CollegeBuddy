@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent, ChangeEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Settings, Upload, Camera, Globe, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
@@ -23,6 +24,7 @@ const emptyProfile: ProfileDto = {
 
 export function ProfilePage() {
   const { user } = useAuth();
+  const location = useLocation();
   const [profile, setProfile] = useState<ProfileDto>(emptyProfile);
   const [editedProfile, setEditedProfile] = useState<ProfileDto>(emptyProfile);
   const [isEditing, setIsEditing] = useState(false);
@@ -35,9 +37,10 @@ export function ProfilePage() {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
+    console.log('ProfilePage mounted/navigated, loading profile...');
     void loadProfile();
     void loadConnectionStats();
-  }, []);
+  }, [location.pathname, user?.id]);
 
   const getAvatarUrl = (url: string | null | undefined): string | undefined => {
     if (!url) return undefined;
@@ -60,10 +63,12 @@ export function ProfilePage() {
 
     try {
       const data = await apiClient.get<ProfileDto>(`/profile/${user.id}`);
+      console.log('Profile loaded:', data);
       setProfile(data);
       setEditedProfile(data);
-    } catch (err) {
-      console.warn('Profile not found, showing empty profile');
+    } catch (err: any) {
+      console.error('Failed to load profile:', err);
+      console.error('Error details:', err.message);
       setProfile(emptyProfile);
       setEditedProfile(emptyProfile);
       setIsEditing(true);
@@ -154,6 +159,7 @@ export function ProfilePage() {
     setSaving(true);
 
     try {
+      console.log('Saving profile with data:', editedProfile);
       await apiClient.put('/profile', editedProfile);
       setProfile(editedProfile);
       setIsEditing(false);
@@ -386,9 +392,10 @@ export function ProfilePage() {
           <TextArea
             label="Bio"
             value={editedProfile.bio}
-            onChange={(value) =>
-              setEditedProfile({ ...editedProfile, bio: value })
-            }
+            onChange={(value) => {
+              console.log('Bio changed to:', value);
+              setEditedProfile({ ...editedProfile, bio: value });
+            }}
             placeholder="Tell others about yourself..."
             rows={4}
             maxLength={500}
