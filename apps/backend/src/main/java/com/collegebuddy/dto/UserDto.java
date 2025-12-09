@@ -5,5 +5,6 @@ public record UserDto(
         String displayName,
         String avatarUrl,
         String visibility,
-        String campusDomain
+        String campusDomain,
+        String role
 ) {}

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { Button, Input } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
+import { JWT_STORAGE_KEY } from '../../config';
 import toast from 'react-hot-toast';
 
 type LoginResponse = {
@@ -29,18 +30,14 @@ export function LoginPage() {
       });
 
       if (res.jwt) {
-        // Decode JWT to get user data
-        const payload = JSON.parse(atob(res.jwt.split('.')[1]));
-        const userData = {
-          id: payload.sub,
-          email: payload.email || email,
-          displayName: payload.displayName || '',
-          campusDomain: payload.campusDomain || '',
-          profileVisibility: 'PUBLIC' as const
-        };
+        // Store JWT in localStorage BEFORE calling /auth/me
+        localStorage.setItem(JWT_STORAGE_KEY, res.jwt);
 
-        // Use AuthContext login function
-        login(res.jwt, userData);
+        // Fetch user data from /auth/me endpoint
+        const userRes = await apiClient.get<any>('/auth/me');
+
+        // Use AuthContext login function with server-validated user data
+        login(res.jwt, userRes);
 
         // Navigate to home
         navigate('/home');
@@ -86,7 +83,14 @@ export function LoginPage() {
             onChange={setPassword}
             required
             placeholder="Enter your password"
+            showPasswordToggle
           />
+
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-sm text-blue-500 hover:text-blue-600">
+              Forgot password?
+            </Link>
+          </div>
 
           <Button type="submit" variant="primary" fullWidth loading={loading}>
             Log In

@@ -45,7 +45,8 @@ public class UserDtoMapper {
                 displayName,
                 avatarUrl,
                 visibility,
-                user.getCampusDomain()
+                user.getCampusDomain(),
+                user.getRole().name()
         );
     }
 
