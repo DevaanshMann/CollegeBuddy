@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, MessageCircle, UserPlus, UserMinus } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import type { DashboardStats, ConnectionRequestDto } from '../../types';
-import { Avatar, Button, Modal } from '../../components/ui';
+import { Button, Modal } from '../../components/ui';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -22,8 +22,8 @@ export function HomePage() {
     connectionsCount: 0,
     profileViews: 0,
   });
-  const [incomingRequests, setIncomingRequests] = useState<ConnectionRequestDto[]>([]);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const [, setIncomingRequests] = useState<ConnectionRequestDto[]>([]);
+  const [, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDisconnect, setConfirmDisconnect] = useState<{
     userId: number;
@@ -85,29 +85,7 @@ export function HomePage() {
     }
   };
 
-  const handleAcceptRequest = async (userId: number) => {
-    try {
-      await apiClient.post('/connections/respond', {
-        otherUserId: userId,
-        accept: true,
-      });
-      loadDashboard(); // Reload to update stats
-    } catch (error) {
-      console.error('Failed to accept request:', error);
-    }
-  };
-
-  const handleDeclineRequest = async (userId: number) => {
-    try {
-      await apiClient.post('/connections/respond', {
-        otherUserId: userId,
-        accept: false,
-      });
-      loadDashboard(); // Reload to update stats
-    } catch (error) {
-      console.error('Failed to decline request:', error);
-    }
-  };
+  // Removed unused functions - they may be needed in future
 
   const handleDisconnect = async () => {
     if (!confirmDisconnect) return;

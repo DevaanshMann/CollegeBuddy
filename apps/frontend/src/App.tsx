@@ -9,6 +9,8 @@ import { LandingPage } from './pages/Landing/LandingPage';
 import { SignupPage } from './pages/Auth/SignupPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { VerifyPage } from './pages/Auth/VerifyPage';
+import { ForgotPasswordPage } from './pages/Auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/Auth/ResetPasswordPage';
 import { HomePage } from './pages/Home/HomePage';
 import { ProfilePage } from './pages/Profile/ProfilePage';
 import { SearchPage } from './pages/Search/SearchPage';
@@ -59,7 +61,7 @@ function AppContent() {
   const [unreadGroups, setUnreadGroups] = useState(0);
 
   // Public routes (no sidebar)
-  const publicRoutes = ['/', '/login', '/signup', '/verify'];
+  const publicRoutes = ['/', '/login', '/signup', '/verify', '/forgot-password', '/reset-password'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   useEffect(() => {
@@ -244,6 +246,8 @@ function AppContent() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes */}
           <Route
