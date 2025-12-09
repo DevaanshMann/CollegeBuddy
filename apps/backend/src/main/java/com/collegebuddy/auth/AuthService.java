@@ -59,7 +59,8 @@ public class AuthService {
     public UserDto getUserById(Long userId) {
         User user = users.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
-        return userDtoMapper.toDto(user);
+        Profile profile = profiles.findById(userId).orElse(null);
+        return userDtoMapper.toDto(user, profile);
     }
 
     public AuthResponse signup(SignupRequest request) {

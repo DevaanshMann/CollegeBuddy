@@ -42,10 +42,11 @@ public class UserDtoMapper {
 
         return new UserDto(
                 user.getId(),
+                user.getEmail(),
                 displayName,
+                user.getCampusDomain(),
                 avatarUrl,
                 visibility,
-                user.getCampusDomain(),
                 user.getRole().name()
         );
     }

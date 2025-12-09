@@ -55,12 +55,12 @@ public class SearchService {
                 .filter(dto -> {
                     // Only exclude users who have blocked the requester
                     // Allow users that the requester has blocked (they'll see them with "Blocked" tag in UI)
-                    if (blockedUsers.existsByBlockerIdAndBlockedId(dto.userId(), requesterId)) {
+                    if (blockedUsers.existsByBlockerIdAndBlockedId(dto.id(), requesterId)) {
                         return false;
                     }
 
                     // visibility rules – PRIVATE profiles only visible to owner
-                    if ("PRIVATE".equalsIgnoreCase(dto.visibility()) && !dto.userId().equals(requesterId)) {
+                    if ("PRIVATE".equalsIgnoreCase(dto.profileVisibility()) && !dto.id().equals(requesterId)) {
                         return false;
                     }
 

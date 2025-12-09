@@ -14,6 +14,7 @@ import com.collegebuddy.dto.SendConnectionRequestDto;
 import com.collegebuddy.dto.UserDto;
 import com.collegebuddy.dto.UserDtoMapper;
 import com.collegebuddy.messaging.MessagingService;
+import com.collegebuddy.repo.BlockedUserRepository;
 import com.collegebuddy.repo.ConnectionRepository;
 import com.collegebuddy.repo.ConnectionRequestRepository;
 import com.collegebuddy.repo.ConversationRepository;
@@ -43,6 +44,7 @@ public class ConnectionService {
     private final ProfileRepository profiles;
     private final UserDtoMapper userDtoMapper;
     private final MessagingService messagingService;
+    private final BlockedUserRepository blockedUsers;
 
     public ConnectionService(ConnectionRepository connections,
                              ConnectionRequestRepository requests,
@@ -51,7 +53,8 @@ public class ConnectionService {
                              UserRepository users,
                              ProfileRepository profiles,
                              UserDtoMapper userDtoMapper,
-                             MessagingService messagingService) {
+                             MessagingService messagingService,
+                             BlockedUserRepository blockedUsers) {
         this.connections = connections;
         this.requests = requests;
         this.conversations = conversations;
@@ -60,6 +63,7 @@ public class ConnectionService {
         this.profiles = profiles;
         this.userDtoMapper = userDtoMapper;
         this.messagingService = messagingService;
+        this.blockedUsers = blockedUsers;
     }
 
     @Transactional
@@ -82,7 +86,11 @@ public class ConnectionService {
                 throw new ForbiddenCampusAccessException("Cannot connect across campuses");
             }
 
-            // normalize pair for connection existence check
+            // Check if there's a block between users
+            if (blockedUsers.existsBlockBetween(requesterId, toUserId)) {
+                throw new InvalidConnectionActionException("Cannot send connection request to this user");
+            }
+
             long a = Math.min(requesterId, toUserId);
             long b = Math.max(requesterId, toUserId);
 
@@ -92,7 +100,6 @@ public class ConnectionService {
             }
             log.info("Step 2 complete: No existing connection");
 
-            // prevent duplicate pending requests (in either direction)
             log.info("Step 3: Checking for pending requests");
             boolean pendingExists =
                     requests.existsByFromUserIdAndToUserIdAndStatus(requesterId, toUserId, ConnectionRequestStatus.PENDING) ||
@@ -103,7 +110,6 @@ public class ConnectionService {
             }
             log.info("Step 3 complete: No pending requests");
 
-            // Delete any old requests (ACCEPTED/DECLINED) so we can create a new one
             log.info("Step 4: Cleaning up old connection requests");
             requests.deleteByFromUserIdAndToUserId(requesterId, toUserId);
             requests.deleteByFromUserIdAndToUserId(toUserId, requesterId);
@@ -176,30 +182,25 @@ public class ConnectionService {
             throw new ConnectionNotFoundException("Connection not found");
         }
 
-        // Delete the connection
         connections.deleteByUserAIdAndUserBId(a, b);
 
-        // Delete any old connection requests (in both directions) so users can reconnect
         requests.deleteByFromUserIdAndToUserId(currentUserId, otherUserId);
         requests.deleteByFromUserIdAndToUserId(otherUserId, currentUserId);
 
-        // Delete conversation (messages auto-deleted via ON DELETE CASCADE)
         var conversation = conversations.findByUserAIdAndUserBId(a, b);
         if (conversation.isPresent()) {
             conversations.delete(conversation.get());
-            conversations.flush(); // Ensure delete is executed immediately
+            conversations.flush();
         }
     }
 
     public ConnectionStatusDto getConnectionStatus(Long userId) {
-        // all connections where I am A or B
         List<Connection> myConns = connections.findByUserAIdOrUserBId(userId, userId);
 
         Set<Long> connectionUserIds = myConns.stream()
                 .map(c -> Objects.equals(c.getUserAId(), userId) ? c.getUserBId() : c.getUserAId())
                 .collect(Collectors.toSet());
 
-        // pending incoming / outgoing
         List<ConnectionRequest> incoming = requests.findByToUserIdAndStatus(userId, ConnectionRequestStatus.PENDING);
         List<ConnectionRequest> outgoing = requests.findByFromUserIdAndStatus(userId, ConnectionRequestStatus.PENDING);
 
@@ -211,7 +212,6 @@ public class ConnectionService {
                 .map(ConnectionRequest::getToUserId)
                 .collect(Collectors.toSet());
 
-        // load all users/profiles in one go
         Set<Long> allUserIds = new HashSet<>();
         allUserIds.addAll(connectionUserIds);
         allUserIds.addAll(incomingUserIds);
@@ -238,7 +238,6 @@ public class ConnectionService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        // Get unread message counts for each connection
         List<Long> friendIds = new ArrayList<>(connectionUserIds);
         Map<Long, Long> unreadCounts = messagingService.getUnreadCounts(userId, friendIds);
 
@@ -256,10 +255,10 @@ public class ConnectionService {
         UserDto userDto = userDtoMapper.toDto(u, p);
         return new ConnectionRequestDto(
                 req.getId(),
-                userDto.userId(),
+                userDto.id(),
                 userDto.displayName(),
                 userDto.avatarUrl(),
-                userDto.visibility(),
+                userDto.profileVisibility(),
                 userDto.campusDomain()
         );
     }
