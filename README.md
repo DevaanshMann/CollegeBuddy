@@ -72,22 +72,50 @@ cp apps/backend/.env.example apps/backend/.env
 ```
 
 **Required environment variables:**
+
+**For Development:**
 ```bash
 # Database
 DB_URL=jdbc:postgresql://localhost:5432/collegebuddy
 DB_USERNAME=collegebuddy
-DB_PASSWORD=your_secure_password
+DB_PASSWORD=collegebuddy
 
 # JWT (minimum 32 characters)
 JWT_SECRET=your_secure_jwt_secret_here_minimum_32_characters
 JWT_TTL_SECONDS=3600
 
-# Email (optional for dev)
-SENDGRID_API_KEY=your_sendgrid_api_key
+# Email (use 'logging' for dev to avoid sending real emails)
+EMAIL_STRATEGY=logging
 EMAIL_FROM=noreply@collegebuddy.app
 
 # Frontend
 FRONTEND_URL=http://localhost:3000
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174
+```
+
+**For Production (collegebuddy.app):**
+```bash
+# Database (Cloud SQL or managed PostgreSQL)
+DB_URL=jdbc:postgresql://your-cloud-sql-host:5432/collegebuddy
+DB_USERNAME=collegebuddy_prod
+DB_PASSWORD=<strong-random-password>
+
+# JWT (CRITICAL: Generate new secret for production)
+JWT_SECRET=<generate-with-openssl-rand-base64-64>
+JWT_TTL_SECONDS=3600
+
+# Email (SendGrid SMTP)
+EMAIL_STRATEGY=smtp
+SENDGRID_API_KEY=SG.your_actual_sendgrid_api_key
+EMAIL_FROM=noreply@collegebuddy.app
+
+# Frontend (your production domain)
+FRONTEND_URL=https://collegebuddy.app
+
+# CORS (production domains only)
+CORS_ALLOWED_ORIGINS=https://collegebuddy.app,https://www.collegebuddy.app
 ```
 
 ### 2. Start Database
