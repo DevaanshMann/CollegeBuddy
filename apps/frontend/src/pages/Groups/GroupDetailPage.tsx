@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Users, Globe, Lock, LogOut, Shield, ArrowLeft, Crown, MessageCircle } from 'lucide-react';
 import { groupsApi } from '../../api/groups';
 import type { GroupDto, GroupMemberDto } from '../../api/groups';
-import { Avatar, Button, Modal } from '../../components/ui';
+import { Button, Modal } from '../../components/ui';
 import toast from 'react-hot-toast';
 
 export function GroupDetailPage() {
@@ -195,43 +195,40 @@ export function GroupDetailPage() {
         </h2>
 
         <div className="space-y-3">
-          {members.map((member) => (
+          {[...members].sort((a, b) => {
+            // Creator always first
+            if (a.userId === group.creatorId) return -1;
+            if (b.userId === group.creatorId) return 1;
+            // Then by join date
+            return new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+          }).map((member) => (
             <div
               key={member.userId}
               className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar
-                  src={member.avatarUrl}
-                  alt={member.displayName}
-                  size="md"
-                  fallback={member.displayName}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
-                    {member.displayName}
-                  </p>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                    Joined {new Date(member.joinedAt).toLocaleDateString()}
-                  </p>
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
+                  {member.displayName}
+                </p>
+                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                  Joined {new Date(member.joinedAt).toLocaleDateString()}
+                </p>
               </div>
 
-              {member.role === 'ADMIN' && (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full dark:bg-blue-300 dark:text-black">
-                  {member.userId === group.creatorId ? (
-                    <>
-                      <Crown className="w-3 h-3" />
-                      Creator
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-3 h-3" />
-                      Admin
-                    </>
-                  )}
-                </div>
-              )}
+              <div className="flex-shrink-0 ml-3">
+                {member.userId === group.creatorId && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full dark:bg-blue-300 dark:text-black">
+                    <Crown className="w-3 h-3" />
+                    Creator
+                  </span>
+                )}
+                {member.role === 'ADMIN' && member.userId !== group.creatorId && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full dark:bg-blue-300 dark:text-black">
+                    <Shield className="w-3 h-3" />
+                    Admin
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
