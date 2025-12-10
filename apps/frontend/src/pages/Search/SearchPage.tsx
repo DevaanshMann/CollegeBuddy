@@ -8,7 +8,7 @@ import { Avatar, Button, Modal } from '../../components/ui';
 import toast from 'react-hot-toast';
 
 type SearchResult = {
-  userId: number;
+  id: number;
   displayName: string;
   avatarUrl?: string;
   visibility?: string;
@@ -96,8 +96,8 @@ export function SearchPage() {
         outgoingRequests: any[];
       }>('/connections');
 
-      setConnections(res.connections.map((f: any) => f.userId));
-      setPendingRequests(res.outgoingRequests.map((r: any) => r.requestedId));
+      setConnections(res.connections.map((f: any) => f.id));
+      setPendingRequests(res.outgoingRequests.map((r: any) => r.userId));
     } catch (err) {
       console.error('Failed to load connections:', err);
     }
@@ -296,12 +296,12 @@ export function SearchPage() {
           </h3>
           <div className="space-y-3">
             {results.map((result) => {
-              const status = getConnectionStatus(result.userId);
-              const isBlocked = blockedUsers.includes(result.userId);
+              const status = getConnectionStatus(result.id);
+              const isBlocked = blockedUsers.includes(result.id);
 
               return (
                 <div
-                  key={result.userId}
+                  key={result.id}
                   className="flex items-center justify-between p-4 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   {/* User Info */}
@@ -342,7 +342,7 @@ export function SearchPage() {
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => handleMessage(result.userId)}
+                        onClick={() => handleMessage(result.id)}
                         className="gap-2 bg-green-500 hover:bg-green-600 border-green-500 hover:border-green-600"
                       >
                         <MessageCircle className="w-4 h-4" />
@@ -360,7 +360,7 @@ export function SearchPage() {
                         variant="primary"
                         size="sm"
                         onClick={() =>
-                          handleConnect(result.userId, result.displayName)
+                          handleConnect(result.id, result.displayName)
                         }
                         className="gap-2"
                       >
@@ -372,7 +372,7 @@ export function SearchPage() {
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => handleUnblock(result.userId, result.displayName)}
+                        onClick={() => handleUnblock(result.id, result.displayName)}
                         className="gap-2"
                       >
                         <ShieldOff className="w-4 h-4" />

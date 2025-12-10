@@ -7,6 +7,7 @@ import { messagesApi, type ConversationListItem } from '../../api/messages';
 import { useAuth } from '../../contexts/AuthContext';
 import { Avatar, Button } from '../../components/ui';
 import { clsx } from 'clsx';
+import toast from 'react-hot-toast';
 
 type Message = {
   id: number;
@@ -94,11 +95,17 @@ export function ChatPage() {
     e.preventDefault();
     if (!newMessage.trim() || !otherUserId) return;
 
+    const recipientId = Number(otherUserId);
+    if (!recipientId || isNaN(recipientId)) {
+      toast.error('Invalid recipient');
+      return;
+    }
+
     setSending(true);
 
     try {
       await apiClient.post('/messages/send', {
-        recipientId: Number(otherUserId),
+        recipientId: recipientId,
         body: newMessage.trim(),
       });
 
@@ -109,8 +116,9 @@ export function ChatPage() {
         loadConversation(Number(otherUserId)),
         loadConversations(),
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send message:', error);
+      toast.error(error.message ?? 'Failed to send message');
     } finally {
       setSending(false);
     }

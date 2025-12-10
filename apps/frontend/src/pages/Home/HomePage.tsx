@@ -50,10 +50,10 @@ export function HomePage() {
 
       // Map connections to friends format
       const friendsList = (connectionsData.connections || []).map((conn: any) => ({
-        userId: conn.userId,
+        userId: conn.id,
         displayName: conn.displayName,
         avatarUrl: conn.avatarUrl,
-        unreadCount: connectionsData.unreadCounts?.[conn.userId] || 0,
+        unreadCount: connectionsData.unreadCounts?.[conn.id] || 0,
       }));
       setFriends(friendsList);
 
