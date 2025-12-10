@@ -23,7 +23,7 @@ const emptyProfile: ProfileDto = {
 };
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const location = useLocation();
   const [profile, setProfile] = useState<ProfileDto>(emptyProfile);
   const [editedProfile, setEditedProfile] = useState<ProfileDto>(emptyProfile);
@@ -161,7 +161,12 @@ export function ProfilePage() {
       setProfile(editedProfile);
       setIsEditing(false);
       toast.success('Profile saved successfully!');
-      await loadProfile(); // Reload to get latest data
+
+      // Refresh user data in auth context (updates sidebar immediately)
+      await refreshUser();
+
+      // Reload profile to get latest data
+      await loadProfile();
     } catch (err: any) {
       console.error('Save profile error:', err);
       toast.error(err.message ?? 'Failed to save profile');

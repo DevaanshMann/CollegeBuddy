@@ -56,10 +56,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
+  const refreshUser = async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch user');
+      }
+
+      const userData: UserDto = await res.json();
+      setUser(userData);
+    } catch (err) {
+      console.error('Failed to refresh user data:', err);
+    }
+  };
+
   const isAuthenticated = !!token && !!user;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout, refreshUser }}>
       {!loading && children}
     </AuthContext.Provider>
   );
