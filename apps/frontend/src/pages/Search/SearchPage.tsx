@@ -4,7 +4,7 @@ import { Search, X, UserPlus, UserMinus, Clock, ShieldOff, MessageCircle } from 
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { blockingApi } from '../../api/blocking';
-import { Avatar, Button, Modal } from '../../components/ui';
+import { Button, Modal } from '../../components/ui';
 import toast from 'react-hot-toast';
 
 type SearchResult = {
@@ -305,30 +305,22 @@ export function SearchPage() {
                   className="flex items-center justify-between p-4 bg-light-surface dark:bg-dark-surface rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   {/* User Info */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Avatar
-                      src={result.avatarUrl}
-                      alt={result.displayName}
-                      size="md"
-                      fallback={result.displayName}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
-                          {result.displayName}
-                        </p>
-                        {isBlocked && (
-                          <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700">
-                            Blocked
-                          </span>
-                        )}
-                      </div>
-                      {result.campusDomain && (
-                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">
-                          @{result.campusDomain}
-                        </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
+                        {result.displayName}
+                      </p>
+                      {isBlocked && (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700">
+                          Blocked
+                        </span>
                       )}
                     </div>
+                    {result.campusDomain && (
+                      <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary truncate">
+                        @{result.campusDomain}
+                      </p>
+                    )}
                   </div>
 
                   {/* Action Buttons */}

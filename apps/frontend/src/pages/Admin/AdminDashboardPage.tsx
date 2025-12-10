@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Users, UserCheck, UserX, Clock, MessageSquare, Link, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { adminApi } from '../../api/admin';
 import type { AdminUserDto, AdminStatsDto, AccountStatus } from '../../api/admin';
-import { Avatar, Button, Modal } from '../../components/ui';
+import { Button, Modal } from '../../components/ui';
 import toast from 'react-hot-toast';
 
 export function AdminDashboardPage() {
@@ -252,21 +252,13 @@ export function AdminDashboardPage() {
                   {users.map((user) => (
                     <tr key={user.userId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <Avatar
-                            src={user.avatarUrl}
-                            alt={user.displayName}
-                            size="sm"
-                            fallback={user.displayName}
-                          />
-                          <div>
-                            <p className="font-medium text-light-text-primary dark:text-dark-text-primary">
-                              {user.displayName}
-                            </p>
-                            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                              ID: {user.userId}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="font-medium text-light-text-primary dark:text-dark-text-primary">
+                            {user.displayName}
+                          </p>
+                          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                            ID: {user.userId}
+                          </p>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -345,21 +337,13 @@ export function AdminDashboardPage() {
       >
         {selectedUser && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <Avatar
-                src={selectedUser.avatarUrl}
-                alt={selectedUser.displayName}
-                size="md"
-                fallback={selectedUser.displayName}
-              />
-              <div>
-                <p className="font-semibold text-light-text-primary dark:text-dark-text-primary">
-                  {selectedUser.displayName}
-                </p>
-                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                  {selectedUser.email}
-                </p>
-              </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <p className="font-semibold text-light-text-primary dark:text-dark-text-primary">
+                {selectedUser.displayName}
+              </p>
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                {selectedUser.email}
+              </p>
             </div>
 
             <div>
