@@ -120,11 +120,15 @@ export function DeleteAccountPage() {
         title="Confirm Account Deletion"
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-black dark:text-red-200">
-              <p className="font-semibold mb-1">This action is permanent and irreversible</p>
-              <p>All your data will be permanently deleted from our servers.</p>
+          <div className="flex items-start gap-3 p-4 bg-light-surface dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-lg">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-light-text-primary dark:text-dark-text-primary mb-1">
+                <span className="text-red-600 dark:text-red-400">WARNING:</span> This action is permanent and irreversible
+              </p>
+              <p className="text-light-text-secondary dark:text-dark-text-secondary">
+                All your data will be permanently deleted from our servers.
+              </p>
             </div>
           </div>
 
