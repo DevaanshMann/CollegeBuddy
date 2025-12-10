@@ -5,7 +5,7 @@ import { blockingApi } from "../../api/blocking";
 import toast from "react-hot-toast";
 
 type UserDto = {
-    userId: number;
+    id: number;
     displayName: string;
     avatarUrl?: string;
     visibility?: string;
@@ -42,6 +42,7 @@ export function ConnectionsPage() {
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState<{ userId: number; displayName: string } | null>(null);
+    const [confirmBlock, setConfirmBlock] = useState<{ userId: number; displayName: string } | null>(null);
     const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
 
     // All sections start collapsed
@@ -117,15 +118,23 @@ export function ConnectionsPage() {
         }
     }
 
-    async function handleBlock(userId: number, displayName: string) {
+    function showBlockConfirm(userId: number, displayName: string) {
+        setConfirmBlock({ userId, displayName });
+    }
+
+    async function handleBlock() {
+        if (!confirmBlock) return;
+
         try {
-            await blockingApi.blockUser(userId);
-            toast.success(`Blocked ${displayName}. Connection removed.`);
+            await blockingApi.blockUser(confirmBlock.userId);
+            toast.success(`Blocked ${confirmBlock.displayName}. Connection removed.`);
+            setConfirmBlock(null);
             await loadConnections();
             await loadBlockedUsers();
         } catch (err: any) {
             console.error("Block error:", err);
             toast.error(err.message ?? "Failed to block user");
+            setConfirmBlock(null);
         }
     }
 
@@ -198,10 +207,10 @@ export function ConnectionsPage() {
                         ) : (
                             <div className="flex flex-col gap-2">
                                 {data.connections.map((f) => {
-                                    const unreadCount = data.unreadCounts[f.userId] || 0;
+                                    const unreadCount = data.unreadCounts[f.id] || 0;
                                     return (
                                         <div
-                                            key={f.userId}
+                                            key={f.id}
                                             className={`flex items-center justify-between p-3 rounded-lg ${
                                                 unreadCount > 0
                                                     ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500'
@@ -224,9 +233,9 @@ export function ConnectionsPage() {
                                                 )}
                                             </div>
                                             <div className="flex gap-2">
-                                                {blockedUsers.includes(f.userId) ? (
+                                                {blockedUsers.includes(f.id) ? (
                                                     <button
-                                                        onClick={() => handleUnblock(f.userId, f.displayName)}
+                                                        onClick={() => handleUnblock(f.id, f.displayName)}
                                                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                     >
                                                         Unblock
@@ -234,19 +243,19 @@ export function ConnectionsPage() {
                                                 ) : (
                                                     <>
                                                         <button
-                                                            onClick={() => navigate(`/chat/${f.userId}`)}
+                                                            onClick={() => navigate(`/chat/${f.id}`)}
                                                             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                                                         >
                                                             Message
                                                         </button>
                                                         <button
-                                                            onClick={() => handleBlock(f.userId, f.displayName)}
+                                                            onClick={() => showBlockConfirm(f.id, f.displayName)}
                                                             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                                                         >
                                                             Block
                                                         </button>
                                                         <button
-                                                            onClick={() => showDisconnectConfirm(f.userId, f.displayName)}
+                                                            onClick={() => showDisconnectConfirm(f.id, f.displayName)}
                                                             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                                                         >
                                                             Disconnect
@@ -395,6 +404,38 @@ export function ConnectionsPage() {
                                 className="px-6 py-2 rounded bg-red-600 text-white hover:bg-red-700"
                             >
                                 Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Block Confirmation Modal */}
+            {confirmBlock && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-light-bg dark:bg-dark-bg p-8 rounded-lg max-w-md text-center shadow-xl">
+                        <h3 className="text-xl font-semibold mb-4 text-light-text-primary dark:text-dark-text-primary">
+                            Confirm Block
+                        </h3>
+                        <p className="mb-6 text-light-text-secondary dark:text-dark-text-secondary">
+                            Are you sure you want to block{' '}
+                            <strong className="text-light-text-primary dark:text-dark-text-primary">
+                                {confirmBlock.displayName}
+                            </strong>
+                            ? This will remove your connection and prevent them from contacting you.
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => setConfirmBlock(null)}
+                                className="px-6 py-2 rounded border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary hover:bg-light-surface dark:hover:bg-dark-surface"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBlock}
+                                className="px-6 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+                            >
+                                Block User
                             </button>
                         </div>
                     </div>

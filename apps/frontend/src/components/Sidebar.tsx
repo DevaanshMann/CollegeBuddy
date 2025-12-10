@@ -13,7 +13,7 @@ import {
   Users,
   Shield
 } from 'lucide-react';
-import { Avatar, Badge } from './ui';
+import { Badge } from './ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useState } from 'react';
