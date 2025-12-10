@@ -187,6 +187,7 @@ export interface AuthContextType {
   token: string | null;
   login: (token: string, user: UserDto) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 // API Response Types
