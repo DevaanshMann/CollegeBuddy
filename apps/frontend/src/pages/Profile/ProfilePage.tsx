@@ -37,7 +37,6 @@ export function ProfilePage() {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
-    console.log('ProfilePage mounted/navigated, loading profile...');
     void loadProfile();
     void loadConnectionStats();
   }, [location.pathname, user?.id]);
@@ -63,7 +62,6 @@ export function ProfilePage() {
 
     try {
       const data = await apiClient.get<ProfileDto>(`/profile/${user.id}`);
-      console.log('Profile loaded:', data);
       setProfile(data);
       setEditedProfile(data);
     } catch (err: any) {
@@ -159,7 +157,6 @@ export function ProfilePage() {
     setSaving(true);
 
     try {
-      console.log('Saving profile with data:', editedProfile);
       await apiClient.put('/profile', editedProfile);
       setProfile(editedProfile);
       setIsEditing(false);
@@ -393,7 +390,6 @@ export function ProfilePage() {
             label="Bio"
             value={editedProfile.bio}
             onChange={(value) => {
-              console.log('Bio changed to:', value);
               setEditedProfile({ ...editedProfile, bio: value });
             }}
             placeholder="Tell others about yourself..."

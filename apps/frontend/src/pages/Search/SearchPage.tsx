@@ -199,7 +199,6 @@ export function SearchPage() {
   const getConnectionStatus = (userId: number): ConnectionStatus => {
     // Handle potential type mismatch between userId and user.id
     if (user?.id && Number(userId) === Number(user.id)) {
-      console.log('Found your own profile:', userId, user.id);
       return 'you';
     }
     if (connections.includes(userId)) return 'connected';
