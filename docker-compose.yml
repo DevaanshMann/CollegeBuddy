@@ -30,6 +30,7 @@ services:
     volumes:
       - uploads:/app/uploads/avatars
     environment:
+      PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/collegebuddy
       SPRING_DATASOURCE_USERNAME: collegebuddy
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-collegebuddy}
