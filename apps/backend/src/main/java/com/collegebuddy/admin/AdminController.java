@@ -89,6 +89,28 @@ public class AdminController {
     }
 
     /**
+     * PUT /admin/users/{userId}/role
+     * Update user role
+     */
+    @PutMapping("/users/{userId}/role")
+    public ResponseEntity<?> updateUserRole(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserRoleRequest request
+    ) {
+        AuthenticatedUser auth = SecurityUtils.getCurrentUser();
+        log.info("PUT /admin/users/{}/role - Admin ID: {}, New Role: {}",
+                 userId, auth.id(), request.role());
+
+        adminService.updateUserRole(auth.id(), userId, request.role());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "User role updated successfully",
+                "userId", userId,
+                "newRole", request.role()
+        ));
+    }
+
+    /**
      * GET /admin/stats
      * Get platform statistics
      */

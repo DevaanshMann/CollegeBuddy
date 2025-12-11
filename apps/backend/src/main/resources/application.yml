@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${PORT:8081}
   tomcat:
     max-swallow-size: 10MB
     max-http-form-post-size: 10MB
@@ -71,7 +71,7 @@ collegebuddy:
 
   # CORS configuration
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,https://collegebuddy.app,https://www.collegebuddy.app,https://collegebuddy-web-317647215220.us-central1.run.app}
 
   # Storage configuration
   storage:

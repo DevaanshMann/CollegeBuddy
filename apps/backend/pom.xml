@@ -133,6 +133,12 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
+        <!-- Cloud SQL Socket Factory -->
+        <dependency>
+            <groupId>com.google.cloud.sql</groupId>
+            <artifactId>postgres-socket-factory</artifactId>
+            <version>1.20.1</version>
+        </dependency>
 
         <!-- Optional: Lombok -->
         <dependency>

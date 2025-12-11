@@ -118,6 +118,27 @@ public class AdminService {
     }
 
     /**
+     * Update user role
+     */
+    @Transactional
+    public void updateUserRole(Long adminId, Long targetUserId, Role newRole) {
+        verifyAdmin(adminId);
+
+        User user = users.findById(targetUserId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (user.getRole() == Role.ADMIN && !adminId.equals(targetUserId)) {
+            throw new UnauthorizedException("Cannot modify other admin accounts");
+        }
+
+        log.info("Admin {} updating user {} role from {} to {}",
+                 adminId, targetUserId, user.getRole(), newRole);
+
+        user.setRole(newRole);
+        users.save(user);
+    }
+
+    /**
      * Get platform statistics
      */
     public AdminStatsDto getStats(Long adminId) {
