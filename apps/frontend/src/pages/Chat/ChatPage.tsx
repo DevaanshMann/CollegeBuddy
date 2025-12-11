@@ -5,7 +5,7 @@ import { Send, Search, MoreVertical } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { messagesApi, type ConversationListItem } from '../../api/messages';
 import { useAuth } from '../../contexts/AuthContext';
-import { Avatar, Button } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -28,7 +28,6 @@ export function ChatPage() {
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [activeConversation, setActiveConversation] = useState<ConversationResponse | null>(null);
   const [otherUserName, setOtherUserName] = useState<string>('');
-  const [otherUserAvatar, setOtherUserAvatar] = useState<string | undefined>();
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,6 @@ export function ChatPage() {
 
       setActiveConversation(conversationRes);
       setOtherUserName(profileRes.displayName);
-      setOtherUserAvatar(profileRes.avatarUrl);
 
       // Mark messages as read
       await apiClient.post(`/messages/mark-read/${userId}`, {});
@@ -185,22 +183,14 @@ export function ChatPage() {
                     otherUserId === String(conv.otherUserId) && 'bg-light-surface'
                   )}
                 >
-                  <div className="relative">
-                    <Avatar
-                      src={conv.otherUserAvatar ?? undefined}
-                      alt={conv.otherUserName}
-                      size="md"
-                      fallback={conv.otherUserName}
-                    />
+                  <div className="flex-1 text-left min-w-0 relative">
                     {conv.unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-semibold">
                           {conv.unreadCount}
                         </span>
                       </div>
                     )}
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-semibold truncate text-light-text-primary">
                         {conv.otherUserName}
@@ -250,12 +240,6 @@ export function ChatPage() {
             {/* Chat Header */}
             <div className="p-4 border-b border-light-border flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar
-                  src={otherUserAvatar}
-                  alt={otherUserName}
-                  size="md"
-                  fallback={otherUserName}
-                />
                 <div>
                   <h3 className="font-semibold text-light-text-primary">
                     {otherUserName}

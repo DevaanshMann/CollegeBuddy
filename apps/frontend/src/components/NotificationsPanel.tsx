@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X, UserPlus, UserCheck, MessageSquare, Users } from 'lucide-react';
-import { Avatar, Button } from './ui';
+import { Button } from './ui';
 import type { NotificationDto } from '../types';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -146,32 +146,18 @@ export function NotificationsPanel({
                       )}
                     >
                       <div className="flex gap-3">
-                        {notification.type === 'NEW_GROUP_MESSAGE' ? (
-                          <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                          </div>
-                        ) : (
-                          <Avatar
-                            src={notification.userAvatar}
-                            alt={notification.userName || 'User'}
-                            size="md"
-                            fallback={notification.userName || 'U'}
-                          />
-                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-2 mb-1">
                             {getNotificationIcon(notification.type)}
                             <div className="flex-1">
                               <p className="text-sm text-light-text-primary dark:text-dark-text-primary">
-                                {notification.type === 'NEW_GROUP_MESSAGE' ? (
-                                  <>{notification.message}</>
-                                ) : (
+                                {notification.userName && (
                                   <>
                                     <span className="font-semibold">{notification.userName}</span>
                                     {' '}
-                                    {notification.message}
                                   </>
                                 )}
+                                {notification.message}
                               </p>
                               <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
                                 {formatTimestamp(notification.timestamp)}
