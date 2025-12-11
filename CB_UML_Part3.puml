@@ -1,0 +1,701 @@
+@startuml CB_UML_Part3
+!define ENTITY_COLOR #E1F5FE
+!define CONTROLLER_COLOR #FFF9C4
+!define SERVICE_COLOR #C8E6C9
+!define REPOSITORY_COLOR #F8BBD0
+!define ENUM_COLOR #E0E0E0
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+title CollegeBuddy - Class Diagram with Design Patterns
+
+' ============================================================================
+' DESIGN PATTERNS LEGEND
+' ============================================================================
+note as DesignPatterns
+  <b>Design Patterns Used:</b>
+  • <b>Repository Pattern:</b> Data access abstraction (all repositories)
+  • <b>Facade Pattern:</b> Simplified interface to subsystems (all services)
+  • <b>MVC Pattern:</b> Separation of concerns (controllers, services, domain)
+  • <b>Dependency Injection:</b> Spring IoC container (constructor injection)
+  • <b>DTO Pattern:</b> Data transfer objects for API responses
+  • <b>Strategy Pattern:</b> Email delivery strategies (SMTP/Logging)
+  • <b>Factory Pattern:</b> Token generation (verification, password reset)
+  • <b>Singleton Pattern:</b> Spring beans (services, controllers)
+  • <b>Service Layer Pattern:</b> Business logic encapsulation
+end note
+
+' ============================================================================
+' DOMAIN LAYER - Entities
+' ============================================================================
+package "Domain Layer (Entities)" <<Rectangle>> ENTITY_COLOR {
+
+  class User {
+    - id: Long
+    - email: String
+    - hashedPassword: String
+    - campusDomain: String
+    - status: AccountStatus
+    - role: Role
+    --
+    + getId(): Long
+    + getEmail(): String
+    + getRole(): Role
+    + getStatus(): AccountStatus
+    --
+    <b>Feature:</b> User Authentication & Authorization
+  }
+
+  class Profile {
+    - userId: Long
+    - displayName: String
+    - bio: String
+    - major: String
+    - graduationYear: Integer
+    - interests: String
+    - avatarUrl: String
+    - schoolId: Long
+    - visibility: Visibility
+    --
+    + getDisplayName(): String
+    + getAvatarUrl(): String
+    --
+    <b>Feature:</b> User Profile Management
+  }
+
+  class School {
+    - id: Long
+    - name: String
+    - domain: String
+    - location: String
+    --
+    + getDomain(): String
+    + getName(): String
+    --
+    <b>Feature:</b> School/Campus Information
+  }
+
+  class Connection {
+    - id: Long
+    - user1Id: Long
+    - user2Id: Long
+    - createdAt: LocalDateTime
+    --
+    + getUser1Id(): Long
+    + getUser2Id(): Long
+    --
+    <b>Feature:</b> User Connections Network
+  }
+
+  class ConnectionRequest {
+    - id: Long
+    - fromUserId: Long
+    - toUserId: Long
+    - status: ConnectionRequestStatus
+    - createdAt: LocalDateTime
+    --
+    + getStatus(): ConnectionRequestStatus
+    + getFromUserId(): Long
+    --
+    <b>Feature:</b> Connection Request Management
+  }
+
+  class Message {
+    - id: Long
+    - conversationId: Long
+    - senderId: Long
+    - body: String
+    - sentAt: LocalDateTime
+    - isRead: Boolean
+    --
+    + getBody(): String
+    + isRead(): Boolean
+    --
+    <b>Feature:</b> Direct Messaging
+  }
+
+  class Conversation {
+    - id: Long
+    - user1Id: Long
+    - user2Id: Long
+    - lastMessageAt: LocalDateTime
+    --
+    + getLastMessageAt(): LocalDateTime
+    --
+    <b>Feature:</b> Conversation Management
+  }
+
+  class Group {
+    - id: Long
+    - name: String
+    - description: String
+    - creatorId: Long
+    - schoolId: Long
+    - createdAt: LocalDateTime
+    --
+    + getName(): String
+    + getCreatorId(): Long
+    --
+    <b>Feature:</b> Study Groups
+  }
+
+  class GroupMember {
+    - id: Long
+    - groupId: Long
+    - userId: Long
+    - role: GroupRole
+    - joinedAt: LocalDateTime
+    --
+    + getRole(): GroupRole
+    --
+    <b>Feature:</b> Group Membership
+  }
+
+  class GroupMessage {
+    - id: Long
+    - groupId: Long
+    - senderId: Long
+    - body: String
+    - sentAt: LocalDateTime
+    --
+    + getBody(): String
+    --
+    <b>Feature:</b> Group Messaging
+  }
+
+  class BlockedUser {
+    - id: Long
+    - blockerId: Long
+    - blockedId: Long
+    - blockedAt: LocalDateTime
+    --
+    + getBlockerId(): Long
+    + getBlockedId(): Long
+    --
+    <b>Feature:</b> User Blocking
+  }
+
+  class VerificationToken {
+    - id: Long
+    - userId: Long
+    - token: String
+    - expiresAt: LocalDateTime
+    --
+    + isExpired(): Boolean
+    --
+    <b>Feature:</b> Email Verification
+  }
+
+  class PasswordResetToken {
+    - id: Long
+    - userId: Long
+    - token: String
+    - expiresAt: LocalDateTime
+    --
+    + isExpired(): Boolean
+    --
+    <b>Feature:</b> Password Reset
+  }
+
+  ' Enums
+  enum Role <<enumeration>> ENUM_COLOR {
+    STUDENT
+    ADMIN
+  }
+
+  enum AccountStatus <<enumeration>> ENUM_COLOR {
+    PENDING_VERIFICATION
+    ACTIVE
+    DEACTIVATED
+  }
+
+  enum ConnectionRequestStatus <<enumeration>> ENUM_COLOR {
+    PENDING
+    ACCEPTED
+    DECLINED
+  }
+
+  enum GroupRole <<enumeration>> ENUM_COLOR {
+    MEMBER
+    MODERATOR
+    CREATOR
+  }
+
+  enum Visibility <<enumeration>> ENUM_COLOR {
+    PUBLIC
+    CONNECTIONS_ONLY
+    PRIVATE
+  }
+}
+
+' ============================================================================
+' REPOSITORY LAYER - Data Access (Repository Pattern)
+' ============================================================================
+package "Repository Layer\n<<Repository Pattern>>" <<Rectangle>> REPOSITORY_COLOR {
+
+  interface UserRepository <<Repository Pattern>> {
+    + findByEmail(email: String): Optional<User>
+    + findByCampusDomain(domain: String): List<User>
+    + existsByEmail(email: String): boolean
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface ProfileRepository <<Repository Pattern>> {
+    + findByUserId(userId: Long): Optional<Profile>
+    + searchByDisplayName(name: String): List<Profile>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface ConnectionRepository <<Repository Pattern>> {
+    + findByUser1IdAndUser2Id(): Optional<Connection>
+    + countByUserId(userId: Long): Long
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface ConnectionRequestRepository <<Repository Pattern>> {
+    + findByFromUserIdAndToUserId(): Optional<ConnectionRequest>
+    + findPendingRequests(userId: Long): List<ConnectionRequest>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface MessageRepository <<Repository Pattern>> {
+    + findByConversationId(convId: Long): List<Message>
+    + countUnreadMessages(userId: Long): Long
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface ConversationRepository <<Repository Pattern>> {
+    + findByUser1IdAndUser2Id(): Optional<Conversation>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface GroupRepository <<Repository Pattern>> {
+    + findBySchoolId(schoolId: Long): List<Group>
+    + searchByName(name: String): List<Group>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface GroupMemberRepository <<Repository Pattern>> {
+    + findByGroupIdAndUserId(): Optional<GroupMember>
+    + findByGroupId(groupId: Long): List<GroupMember>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface GroupMessageRepository <<Repository Pattern>> {
+    + findByGroupId(groupId: Long): List<GroupMessage>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface BlockedUserRepository <<Repository Pattern>> {
+    + existsByBlockerIdAndBlockedId(): boolean
+    + findByBlockerId(blockerId: Long): List<BlockedUser>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface VerificationTokenRepository <<Repository Pattern>> {
+    + findByToken(token: String): Optional<VerificationToken>
+    + deleteByUserId(userId: Long): void
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface PasswordResetTokenRepository <<Repository Pattern>> {
+    + findByToken(token: String): Optional<PasswordResetToken>
+    + deleteByUserId(userId: Long): void
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+
+  interface SchoolRepository <<Repository Pattern>> {
+    + findByDomain(domain: String): Optional<School>
+    --
+    <b>Pattern:</b> Repository for data access abstraction
+  }
+}
+
+' ============================================================================
+' SERVICE LAYER - Business Logic (Service Layer Pattern)
+' ============================================================================
+package "Service Layer\n<<Service Layer Pattern>>" <<Rectangle>> SERVICE_COLOR {
+
+  class AuthService <<Facade Pattern>> <<Singleton>> {
+    - userRepo: UserRepository
+    - profileRepo: ProfileRepository
+    - tokenService: TokenService
+    - emailService: EmailService
+    --
+    + signup(request: SignupRequest): SignupResponse
+    + login(request: LoginRequest): LoginResponse
+    + verifyEmail(token: String): void
+    + initiatePasswordReset(email: String): void
+    + resetPassword(token: String, newPassword: String): void
+    --
+    <b>Pattern:</b> Facade for authentication subsystem
+    <b>Feature:</b> Authentication & Authorization
+  }
+
+  class ProfileService <<Facade Pattern>> <<Singleton>> {
+    - profileRepo: ProfileRepository
+    - userRepo: UserRepository
+    - mediaService: MediaStorageService
+    --
+    + getProfile(userId: Long): ProfileDto
+    + updateProfile(userId: Long, dto: ProfileDto): ProfileDto
+    + uploadAvatar(userId: Long, file: MultipartFile): String
+    --
+    <b>Pattern:</b> Facade for profile management
+    <b>Feature:</b> Profile Management
+  }
+
+  class ConnectionService <<Facade Pattern>> <<Singleton>> {
+    - connectionRepo: ConnectionRepository
+    - requestRepo: ConnectionRequestRepository
+    - blockingService: BlockingService
+    --
+    + sendRequest(fromId: Long, toId: Long): void
+    + acceptRequest(requestId: Long): void
+    + declineRequest(requestId: Long): void
+    + getConnections(userId: Long): List<ConnectionDto>
+    + removeConnection(userId: Long, otherId: Long): void
+    --
+    <b>Pattern:</b> Facade for connection management
+    <b>Feature:</b> Connection Management
+  }
+
+  class MessagingService <<Facade Pattern>> <<Singleton>> {
+    - messageRepo: MessageRepository
+    - conversationRepo: ConversationRepository
+    - blockingService: BlockingService
+    --
+    + sendMessage(senderId: Long, recipientId: Long, body: String): MessageDto
+    + getConversation(userId: Long, otherId: Long): ConversationDto
+    + getAllConversations(userId: Long): List<ConversationDto>
+    + markMessagesAsRead(userId: Long, otherId: Long): void
+    --
+    <b>Pattern:</b> Facade for messaging subsystem
+    <b>Feature:</b> Direct Messaging
+  }
+
+  class GroupService <<Facade Pattern>> <<Singleton>> {
+    - groupRepo: GroupRepository
+    - memberRepo: GroupMemberRepository
+    - messageRepo: GroupMessageRepository
+    --
+    + createGroup(request: CreateGroupRequest): GroupDto
+    + joinGroup(userId: Long, groupId: Long): void
+    + leaveGroup(userId: Long, groupId: Long): void
+    + sendGroupMessage(senderId: Long, groupId: Long, body: String): void
+    + getGroupMessages(groupId: Long): List<GroupMessageDto>
+    --
+    <b>Pattern:</b> Facade for group management
+    <b>Feature:</b> Study Groups
+  }
+
+  class AdminService <<Facade Pattern>> <<Singleton>> {
+    - userRepo: UserRepository
+    - profileRepo: ProfileRepository
+    --
+    + getAllUsers(pageable: Pageable): Page<AdminUserDto>
+    + getUserDetails(userId: Long): AdminUserDto
+    + deactivateUser(adminId: Long, userId: Long): void
+    + reactivateUser(adminId: Long, userId: Long): void
+    + updateUserRole(adminId: Long, userId: Long, role: Role): void
+    + getPlatformStats(): PlatformStatsDto
+    --
+    <b>Pattern:</b> Facade for admin operations
+    <b>Feature:</b> Admin Dashboard
+  }
+
+  class SearchService <<Facade Pattern>> <<Singleton>> {
+    - profileRepo: ProfileRepository
+    - groupRepo: GroupRepository
+    --
+    + searchUsers(query: String, userId: Long): List<SearchResultDto>
+    + searchGroups(query: String, schoolId: Long): List<GroupDto>
+    --
+    <b>Pattern:</b> Facade for search operations
+    <b>Feature:</b> User & Group Search
+  }
+
+  class BlockingService <<Facade Pattern>> <<Singleton>> {
+    - blockedUserRepo: BlockedUserRepository
+    --
+    + blockUser(blockerId: Long, blockedId: Long): void
+    + unblockUser(blockerId: Long, blockedId: Long): void
+    + isBlocked(userId1: Long, userId2: Long): boolean
+    + getBlockedUsers(userId: Long): List<BlockedUserDto>
+    --
+    <b>Pattern:</b> Facade for blocking operations
+    <b>Feature:</b> User Blocking
+  }
+
+  class AccountService <<Facade Pattern>> <<Singleton>> {
+    - userRepo: UserRepository
+    - profileRepo: ProfileRepository
+    --
+    + deleteAccount(userId: Long): void
+    + changePassword(userId: Long, oldPwd: String, newPwd: String): void
+    --
+    <b>Pattern:</b> Facade for account operations
+    <b>Feature:</b> Account Management
+  }
+
+  class EmailService <<Strategy Pattern>> {
+    - emailStrategy: EmailStrategy
+    - templateEngine: TemplateEngine
+    --
+    + sendVerificationEmail(email: String, token: String): void
+    + sendPasswordResetEmail(email: String, token: String): void
+    + sendConnectionRequestEmail(email: String, fromName: String): void
+    --
+    <b>Pattern:</b> Strategy for email delivery
+    <b>Feature:</b> Email Notifications
+  }
+
+  class TokenService <<Factory Pattern>> {
+    --
+    + generateVerificationToken(userId: Long): String
+    + generatePasswordResetToken(userId: Long): String
+    + validateToken(token: String): boolean
+    --
+    <b>Pattern:</b> Factory for token generation
+  }
+
+  class JwtService <<Singleton>> {
+    - secretKey: String
+    - ttlSeconds: Long
+    --
+    + generateToken(userId: Long, email: String, role: Role): String
+    + validateToken(token: String): boolean
+    + extractUserId(token: String): Long
+    --
+    <b>Pattern:</b> Singleton Spring bean
+    <b>Feature:</b> JWT Authentication
+  }
+
+  class MediaStorageService <<Singleton>> {
+    - uploadDir: String
+    --
+    + storeAvatar(file: MultipartFile, userId: Long): String
+    + deleteAvatar(userId: Long): void
+    --
+    <b>Pattern:</b> Singleton Spring bean
+    <b>Feature:</b> Media Storage
+  }
+}
+
+' ============================================================================
+' CONTROLLER LAYER - REST API (MVC Pattern)
+' ============================================================================
+package "Controller Layer (REST API)\n<<MVC Pattern>>" <<Rectangle>> CONTROLLER_COLOR {
+
+  class AuthController <<MVC - Controller>> <<Singleton>> {
+    - authService: AuthService
+    --
+    + POST /auth/signup
+    + POST /auth/login
+    + POST /auth/verify
+    + POST /auth/forgot-password
+    + POST /auth/reset-password
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Authentication APIs
+  }
+
+  class ProfileController <<MVC - Controller>> <<Singleton>> {
+    - profileService: ProfileService
+    --
+    + GET /profile/{userId}
+    + PUT /profile
+    + POST /profile/avatar
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Profile Management APIs
+  }
+
+  class ConnectionController <<MVC - Controller>> <<Singleton>> {
+    - connectionService: ConnectionService
+    --
+    + POST /connections/request
+    + POST /connections/accept/{requestId}
+    + POST /connections/decline/{requestId}
+    + GET /connections
+    + DELETE /connections/{userId}
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Connection APIs
+  }
+
+  class MessagingController <<MVC - Controller>> <<Singleton>> {
+    - messagingService: MessagingService
+    --
+    + POST /messages/send
+    + GET /messages/conversation/{userId}
+    + GET /messages/conversations
+    + POST /messages/mark-read/{userId}
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Messaging APIs
+  }
+
+  class GroupController <<MVC - Controller>> <<Singleton>> {
+    - groupService: GroupService
+    --
+    + POST /groups/create
+    + POST /groups/{groupId}/join
+    + POST /groups/{groupId}/leave
+    + POST /groups/{groupId}/message
+    + GET /groups/{groupId}/messages
+    + GET /groups
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Group Management APIs
+  }
+
+  class AdminController <<MVC - Controller>> <<Singleton>> {
+    - adminService: AdminService
+    --
+    + GET /admin/users
+    + GET /admin/users/{userId}
+    + PUT /admin/users/{userId}/deactivate
+    + PUT /admin/users/{userId}/reactivate
+    + PUT /admin/users/{userId}/role
+    + GET /admin/stats
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Admin Dashboard APIs
+    <b>Security:</b> ADMIN role required
+  }
+
+  class SearchController <<MVC - Controller>> <<Singleton>> {
+    - searchService: SearchService
+    --
+    + GET /search/users
+    + GET /search/groups
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Search APIs
+  }
+
+  class BlockingController <<MVC - Controller>> <<Singleton>> {
+    - blockingService: BlockingService
+    --
+    + POST /blocking/block/{userId}
+    + DELETE /blocking/unblock/{userId}
+    + GET /blocking/blocked
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> User Blocking APIs
+  }
+
+  class AccountController <<MVC - Controller>> <<Singleton>> {
+    - accountService: AccountService
+    --
+    + DELETE /account
+    + POST /account/change-password
+    --
+    <b>Pattern:</b> MVC Controller (REST API)
+    <b>Endpoint:</b> Account Management APIs
+  }
+}
+
+' ============================================================================
+' RELATIONSHIPS
+' ============================================================================
+
+' Domain relationships
+User "1" -- "1" Profile : has >
+User "1" -- "0..*" Connection : participates in >
+User "1" -- "0..*" ConnectionRequest : sends/receives >
+User "1" -- "0..*" Message : sends >
+User "1" -- "0..*" GroupMember : member of >
+User "1" -- "0..*" BlockedUser : blocks/blocked by >
+User "1" -- "0..1" VerificationToken : has >
+User "1" -- "0..1" PasswordResetToken : has >
+User "1" -- "1" School : belongs to >
+
+Profile "1" -- "1" School : associated with >
+
+Group "1" -- "0..*" GroupMember : has >
+Group "1" -- "0..*" GroupMessage : contains >
+Group "1" -- "1" School : belongs to >
+
+Conversation "1" -- "0..*" Message : contains >
+
+User -- Role : has >
+User -- AccountStatus : has >
+Profile -- Visibility : has >
+ConnectionRequest -- ConnectionRequestStatus : has >
+GroupMember -- GroupRole : has >
+
+' Repository dependencies
+UserRepository ..> User : manages
+ProfileRepository ..> Profile : manages
+ConnectionRepository ..> Connection : manages
+ConnectionRequestRepository ..> ConnectionRequest : manages
+MessageRepository ..> Message : manages
+ConversationRepository ..> Conversation : manages
+GroupRepository ..> Group : manages
+GroupMemberRepository ..> GroupMember : manages
+GroupMessageRepository ..> GroupMessage : manages
+BlockedUserRepository ..> BlockedUser : manages
+VerificationTokenRepository ..> VerificationToken : manages
+PasswordResetTokenRepository ..> PasswordResetToken : manages
+SchoolRepository ..> School : manages
+
+' Service dependencies (Dependency Injection)
+AuthService ..> UserRepository : uses
+AuthService ..> ProfileRepository : uses
+AuthService ..> TokenService : uses
+AuthService ..> EmailService : uses
+
+ProfileService ..> ProfileRepository : uses
+ProfileService ..> MediaStorageService : uses
+
+ConnectionService ..> ConnectionRepository : uses
+ConnectionService ..> ConnectionRequestRepository : uses
+ConnectionService ..> BlockingService : uses
+
+MessagingService ..> MessageRepository : uses
+MessagingService ..> ConversationRepository : uses
+MessagingService ..> BlockingService : uses
+
+GroupService ..> GroupRepository : uses
+GroupService ..> GroupMemberRepository : uses
+GroupService ..> GroupMessageRepository : uses
+
+AdminService ..> UserRepository : uses
+AdminService ..> ProfileRepository : uses
+
+SearchService ..> ProfileRepository : uses
+SearchService ..> GroupRepository : uses
+
+BlockingService ..> BlockedUserRepository : uses
+
+AccountService ..> UserRepository : uses
+AccountService ..> ProfileRepository : uses
+
+' Controller dependencies (Dependency Injection)
+AuthController ..> AuthService : uses
+ProfileController ..> ProfileService : uses
+ConnectionController ..> ConnectionService : uses
+MessagingController ..> MessagingService : uses
+GroupController ..> GroupService : uses
+AdminController ..> AdminService : uses
+SearchController ..> SearchService : uses
+BlockingController ..> BlockingService : uses
+AccountController ..> AccountService : uses
+
+@enduml
