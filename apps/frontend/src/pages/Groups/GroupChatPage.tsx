@@ -115,10 +115,6 @@ export function GroupChatPage() {
             <ArrowLeft className="w-5 h-5 text-light-text-primary dark:text-dark-text-primary" />
           </button>
 
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-light-text-primary dark:text-dark-text-primary truncate">
               {group.name}
