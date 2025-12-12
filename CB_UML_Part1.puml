@@ -1,0 +1,118 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "Domain" {
+  class Student {
+    +id: UID
+    +name: String
+    +campusEmail: String
+    +age: int
+  }
+
+  class Account {
+    +id: UID
+    +status: AccountStatus
+    +passwordHash: String
+    +createdAt: Instant
+    +lastLoginAt: Instant
+    +initiateEduVerification(): void
+  }
+
+  enum AccountStatus {
+    PENDING_VERIFICATION
+    ACTIVE
+    SUSPENDED
+  }
+
+  class EmailVerification {
+    +id: UID
+    +token: String
+    +expiresAt: Instant
+    +confirmedAt: Instant
+    +generate(): void
+    +confirm(token: String): boolean
+  }
+
+  class Profile {
+    +id: UID
+    +displayName: String
+    +bio: String
+    +visibility: Visibility
+    +avatarUrl: String
+    +major: String
+    +graduationYear: int
+  }
+
+  enum Visibility {
+    PUBLIC
+    CAMPUS_ONLY
+    FRIENDS_ONLY
+  }
+
+  class ConnectionRequest {
+    +id: UID
+    +fromId: UID
+    +toId: UID
+    +status: RequestStatus
+    +sentAt: Instant
+    +respond(a: RequestAction): void
+  }
+
+  enum RequestStatus {
+    PENDING
+    ACCEPTED
+    DECLINED
+    IGNORED
+  }
+
+  enum RequestAction {
+    ACCEPT
+    DECLINE
+    IGNORE
+  }
+
+  class Connection {
+    +id: UID
+    +studentAId: UID
+    +studentBId: UID
+    +createdAt: Instant
+  }
+
+  class Conversation {
+    +id: UID
+    +createdAt: Instant
+  }
+
+  class Message {
+    +id: UID
+    +conversationId: UID
+    +authorId: UID
+    +content: String
+    +sentAt: Instant
+    +editedAt: Instant
+  }
+
+  ' ---- Friend Finder (search) ----
+  class FriendFinder {
+    +searchByName(query: String): List<Profile>
+    +searchByUserName(query: String): List<Profile>
+  }
+}
+
+' ---- Relationships ----
+Student "1" o-- "1" Account : owns >
+Student "1" o-- "1" Profile : has >
+Account "0..1" o-- "1" EmailVerification : latest >
+Student "1" -- "0..*" ConnectionRequest : sends >
+Student "1" -- "0..*" ConnectionRequest : receives <
+ConnectionRequest "1" --> "1" Connection : ACCEPT creates >
+Connection "1" -- "2" Student : Student A / Student B
+Conversation "1" o-- "0..*" Message : contains
+Conversation "1" -- "2..*" Student : participants
+Message "*" --> "1" Student : author >
+
+' Friend search usage
+Student ..> FriendFinder : <<searches>>
+FriendFinder ..> Profile : searches
+
+@enduml
