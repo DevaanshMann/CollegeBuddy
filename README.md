@@ -5,6 +5,7 @@ A modern social networking platform designed for college students to connect, co
 ## Features
 
 ### Core Functionality
+
 - **User Authentication**: Secure JWT-based authentication with email verification
 - **Profile Management**: Customizable user profiles with avatars, bios, and campus information
 - **Campus-Specific Networking**: Multi-tenant architecture supporting multiple college campuses
@@ -18,6 +19,7 @@ A modern social networking platform designed for college students to connect, co
 - **Admin Dashboard**: Administrative tools for managing users and content
 
 ### Security Features
+
 - Email verification for new accounts
 - Password reset via email (SendGrid)
 - JWT token authentication with configurable expiration
@@ -29,25 +31,34 @@ A modern social networking platform designed for college students to connect, co
 ## Tech Stack
 
 ### Backend
+
 - **Framework**: Spring Boot 3.3.4
 - **Language**: Java 21
 - **Database**: PostgreSQL 16 with Flyway migrations
-- **Security**: Spring Security 6.3.2 with JWT
+- **Security**: Spring Security 6.3.2 with JWT (jjwt 0.11.5)
 - **Email**: SendGrid SMTP integration
 - **Build Tool**: Maven
+- **Cloud Support**: Google Cloud SQL Socket Factory 1.20.1
+- **Monitoring**: Spring Boot Actuator (health checks)
+- **Configuration**: spring-dotenv 4.0.0 (.env file support)
 - **Architecture**: Layered architecture with clear separation of concerns
 
 ### Frontend
-- **Framework**: React 19
+
+- **Framework**: React 19.2
 - **Language**: TypeScript 5.9
 - **Build Tool**: Vite 7.2
 - **Styling**: Tailwind CSS 4.1
 - **Routing**: React Router 7.9
-- **UI Components**: Lucide React icons, Framer Motion animations
+- **UI Components**: Lucide React 0.555 (icons), Framer Motion 12.23 (animations)
+- **Notifications**: react-hot-toast 2.6
+- **Utilities**: clsx 2.1 (conditional CSS classes)
 - **HTTP Client**: Fetch API with custom wrapper
 
 ### Design Patterns
+
 The project implements 27+ design patterns including:
+
 - Repository, Service Layer, DTO, Factory, Strategy, Builder, Facade
 - MVC, Dependency Injection, Singleton, Template Method
 - Context API, Custom Hooks, Higher-Order Components
@@ -74,11 +85,13 @@ cp apps/backend/.env.example apps/backend/.env
 **Required environment variables:**
 
 **For Development:**
+
 ```bash
 # Database
 DB_URL=jdbc:postgresql://localhost:5432/collegebuddy
 DB_USERNAME=collegebuddy
 DB_PASSWORD=collegebuddy
+DB_POOL_SIZE=10
 
 # JWT (minimum 32 characters)
 JWT_SECRET=your_secure_jwt_secret_here_minimum_32_characters
@@ -93,14 +106,21 @@ FRONTEND_URL=http://localhost:3000
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174
+
+# Logging (optional - defaults to INFO)
+LOG_LEVEL=DEBUG
+SECURITY_LOG_LEVEL=DEBUG
+FLYWAY_LOG_LEVEL=INFO
 ```
 
 **For Production (collegebuddy.app):**
+
 ```bash
 # Database (Cloud SQL or managed PostgreSQL)
 DB_URL=jdbc:postgresql://your-cloud-sql-host:5432/collegebuddy
 DB_USERNAME=collegebuddy_prod
 DB_PASSWORD=<strong-random-password>
+DB_POOL_SIZE=20
 
 # JWT (CRITICAL: Generate new secret for production)
 JWT_SECRET=<generate-with-openssl-rand-base64-64>
@@ -116,16 +136,23 @@ FRONTEND_URL=https://collegebuddy.app
 
 # CORS (production domains only)
 CORS_ALLOWED_ORIGINS=https://collegebuddy.app,https://www.collegebuddy.app
+
+# Logging (optional - use WARN or ERROR for production)
+LOG_LEVEL=INFO
+SECURITY_LOG_LEVEL=INFO
+FLYWAY_LOG_LEVEL=INFO
 ```
 
 ### 2. Start Database
 
 **Using Docker (Recommended):**
+
 ```bash
 docker compose up db -d
 ```
 
 **Using Local PostgreSQL:**
+
 ```bash
 psql -U postgres
 CREATE DATABASE collegebuddy;
@@ -144,6 +171,7 @@ mvn spring-boot:run
 Backend runs on **http://localhost:8081**
 
 The application will:
+
 - Auto-run Flyway database migrations
 - Initialize the database schema
 - Start the REST API server
@@ -180,9 +208,12 @@ docker compose down -v
 ```
 
 **Services:**
-- Frontend: http://localhost:3000
+
+- Frontend: http://localhost:3000 (dev server) or http://localhost:8080 (Docker/nginx)
 - Backend: http://localhost:8081
 - PostgreSQL: localhost:5432
+
+**Note:** The frontend uses port 3000 when running `npm run dev` locally, but uses port 8080 when running in Docker with nginx.
 
 ## Project Structure
 
@@ -193,55 +224,68 @@ CS5800 - CollegeBuddy/
 │   │   ├── src/
 │   │   │   ├── main/
 │   │   │   │   ├── java/com/collegebuddy/
-│   │   │   │   │   ├── account/    # Account management
-│   │   │   │   │   ├── admin/      # Admin features
+│   │   │   │   │   ├── CollegeBuddyApplication.java
+│   │   │   │   │   ├── account/    # Account management (delete, etc.)
+│   │   │   │   │   ├── admin/      # Admin features & dashboard
 │   │   │   │   │   ├── auth/       # Authentication & authorization
-│   │   │   │   │   ├── blocking/   # User blocking
-│   │   │   │   │   ├── common/     # Shared utilities
-│   │   │   │   │   ├── config/     # Spring configuration
-│   │   │   │   │   ├── connection/ # Friend connections
+│   │   │   │   │   ├── blocking/   # User blocking functionality
+│   │   │   │   │   ├── common/     # Shared utilities & exceptions
+│   │   │   │   │   ├── config/     # Spring configuration (Security, CORS)
+│   │   │   │   │   ├── connection/ # Friend connections & requests
+│   │   │   │   │   ├── domain/     # JPA entities (User, Group, Message, etc.)
 │   │   │   │   │   ├── dto/        # Data Transfer Objects
-│   │   │   │   │   ├── email/      # Email service
-│   │   │   │   │   ├── groups/     # Group features
-│   │   │   │   │   ├── media/      # File upload/storage
+│   │   │   │   │   ├── email/      # Email service (SendGrid, logging)
+│   │   │   │   │   ├── groups/     # Group management & chat
+│   │   │   │   │   ├── media/      # File upload & storage
 │   │   │   │   │   ├── messaging/  # Direct messaging
 │   │   │   │   │   ├── profile/    # User profiles
 │   │   │   │   │   ├── repo/       # JPA repositories
-│   │   │   │   │   ├── search/     # User search
-│   │   │   │   │   └── security/   # Security components
+│   │   │   │   │   ├── search/     # User search functionality
+│   │   │   │   │   └── security/   # JWT, filters, SecurityConfig
 │   │   │   │   └── resources/
-│   │   │   │       ├── application.yml
-│   │   │   │       ├── application-prod.yml
-│   │   │   │       └── db/migration/  # Flyway SQL migrations
-│   │   │   └── test/               # Unit & integration tests
-│   │   ├── .env.example
-│   │   ├── Dockerfile
-│   │   └── pom.xml
+│   │   │   │       ├── application.yml         # Main configuration
+│   │   │   │       ├── application-prod.yml    # Production config
+│   │   │   │       ├── application-local.yml   # Local overrides
+│   │   │   │       └── db/migration/           # Flyway SQL migrations
+│   │   │   └── test/
+│   │   │       ├── java/com/collegebuddy/      # Unit & integration tests
+│   │   │       └── resources/
+│   │   ├── uploads/avatars/        # Uploaded avatar storage
+│   │   ├── .env.example            # Environment variables template
+│   │   ├── Dockerfile              # Multi-stage Docker build
+│   │   └── pom.xml                 # Maven dependencies
 │   │
 │   └── frontend/                   # React Application
 │       ├── src/
-│       │   ├── api/                # API client & endpoints
+│       │   ├── api/                # API client & endpoint definitions
+│       │   ├── assets/             # Static assets
 │       │   ├── components/         # Reusable UI components
 │       │   │   └── ui/             # Base UI components
 │       │   ├── contexts/           # React Context (Auth, Theme)
 │       │   ├── pages/              # Page components
-│       │   │   ├── Auth/           # Login, Signup
-│       │   │   ├── Profile/        # User profile
-│       │   │   ├── Home/           # Home feed
-│       │   │   ├── Search/         # User search
-│       │   │   ├── Connections/    # Friend connections
-│       │   │   ├── Chat/           # Messaging
-│       │   │   ├── Groups/         # Group features
 │       │   │   ├── Admin/          # Admin dashboard
+│       │   │   ├── Auth/           # Login, Signup, email verification
+│       │   │   ├── Chat/           # Direct messaging
+│       │   │   ├── Connections/    # Friend connections
+│       │   │   ├── Groups/         # Group features & group chat
+│       │   │   ├── Home/           # Home feed
+│       │   │   ├── Landing/        # Landing page
+│       │   │   ├── Profile/        # User profile pages
+│       │   │   ├── Search/         # User search
 │       │   │   └── Settings/       # Account settings
-│       │   ├── types/              # TypeScript types
-│       │   └── App.tsx             # Main app component
-│       ├── package.json
-│       └── vite.config.ts
+│       │   ├── types/              # TypeScript type definitions
+│       │   ├── App.tsx             # Main app component & routing
+│       │   └── main.tsx            # Application entry point
+│       ├── public/                 # Public static files
+│       ├── .env                    # Environment configuration
+│       ├── Dockerfile              # Multi-stage Docker build (nginx)
+│       ├── nginx.conf              # Nginx server configuration
+│       ├── package.json            # npm dependencies
+│       ├── tsconfig.json           # TypeScript configuration
+│       └── vite.config.ts          # Vite build configuration
 │
-├── docker-compose.yml
-├── CB-features-updates.md          # Feature documentation
-└── README.md
+├── docker-compose.yml              # Multi-service Docker setup
+└── README.md                       # This file
 ```
 
 ## Configuration
@@ -251,16 +295,21 @@ CS5800 - CollegeBuddy/
 **Main config:** `apps/backend/src/main/resources/application.yml`
 
 Key settings:
-- **Server Port**: 8081
-- **Database**: PostgreSQL with HikariCP connection pooling
+
+- **Server Port**: 8081 (configurable via PORT environment variable)
+- **Database**: PostgreSQL with HikariCP connection pooling (default pool size: 10)
 - **JPA**: Hibernate with validation mode (no auto-DDL)
 - **Flyway**: Automatic database migrations
-- **File Upload**: 5MB max file size
+- **File Upload Limits**:
+  - Max file size: 5MB
+  - Max request size: 10MB
+  - Storage location: `uploads/avatars/` (configurable)
 - **JWT**: Configurable secret and TTL
-- **Email**: SendGrid SMTP with TLS
+- **Email**: SendGrid SMTP with TLS on port 587
 - **CORS**: Configurable allowed origins
 
 **Production config:** `application-prod.yml`
+
 - Optimized logging levels
 - Health endpoint configuration
 - Stricter security settings
@@ -269,15 +318,24 @@ Key settings:
 
 Create `apps/frontend/.env`:
 
+**For Development:**
+
 ```bash
 VITE_API_URL=http://localhost:8081
 ```
 
-For production, update to your deployed backend URL.
+**For Production:**
+
+```bash
+VITE_API_URL=https://api.collegebuddy.app
+```
+
+**Note:** The frontend .env file must be created before building. During Docker builds, use the `VITE_API_URL` build argument to set the API URL.
 
 ## API Documentation
 
 ### Authentication Endpoints
+
 - `POST /auth/signup` - Register new user
 - `POST /auth/login` - User login
 - `POST /auth/verify-email` - Verify email with token
@@ -286,12 +344,14 @@ For production, update to your deployed backend URL.
 - `POST /auth/reset-password` - Reset password with token
 
 ### User & Profile
+
 - `GET /profile` - Get current user's profile
 - `GET /profile/{userId}` - Get user profile by ID
 - `POST /profile` - Update profile
 - `POST /profile/avatar` - Upload profile picture
 
 ### Connections
+
 - `POST /connections/request/{userId}` - Send connection request
 - `POST /connections/respond/{requestId}` - Accept/reject request
 - `GET /connections` - Get all connections
@@ -299,21 +359,29 @@ For production, update to your deployed backend URL.
 - `DELETE /connections/{userId}` - Remove connection
 
 ### Messaging
+
 - `POST /messages/send` - Send message
 - `GET /messages/conversation/{userId}` - Get conversation
 - `GET /messages/conversations` - Get all conversations
 - `POST /messages/mark-read/{userId}` - Mark messages as read
 
 ### Search & Groups
+
 - `GET /search?query=...` - Search users
 - `GET /groups` - Get all groups
 - `POST /groups` - Create group
 - `POST /groups/{groupId}/join` - Join group
 
 ### Admin (ADMIN role required)
+
 - `GET /admin/users` - List all users
 - `GET /admin/stats` - Get platform statistics
 - `POST /admin/users/{userId}/status` - Update user status
+
+### System & Monitoring
+
+- `GET /actuator/health` - Health check endpoint (public access)
+- `GET /uploads/avatars/{filename}` - Serve uploaded avatar images (public access)
 
 ## Development
 
@@ -330,7 +398,12 @@ mvn test
 mvn clean package
 
 # Run with specific profile
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run -Dspring-boot.run.profiles=prod
+
+# Available Spring profiles:
+# - dev: Development configuration (default)
+# - prod: Production configuration (optimized logging, strict security)
+# - local: Local development overrides
 
 # Skip tests
 mvn clean package -DskipTests
@@ -378,6 +451,7 @@ mvn test
 ```
 
 Test categories:
+
 - Unit tests for services and utilities
 - Integration tests for API endpoints
 - Repository tests for database operations
@@ -396,25 +470,26 @@ npm test
 ### Before Deploying to Production
 
 1. **Change all default secrets**
+
    - Generate secure JWT_SECRET (256+ bits)
    - Use strong database passwords
    - Rotate SendGrid API keys
-
 2. **Update CORS configuration**
+
    - Restrict allowed origins to production domains
    - Never use `allowedOrigins("*")` in production
-
 3. **Environment variables**
+
    - Use GCP Secret Manager or similar
    - Never commit `.env` files
    - Verify `.env` is in `.gitignore`
-
 4. **Database security**
+
    - Use Cloud SQL with SSL/TLS
    - Enable automated backups
    - Restrict network access
-
 5. **Enable HTTPS**
+
    - Cloud Run provides HTTPS automatically
    - Configure SSL certificates for custom domains
 
@@ -423,6 +498,7 @@ npm test
 ### Option 1: GCP Cloud Run (Recommended)
 
 **Backend:**
+
 ```bash
 cd apps/backend
 gcloud run deploy collegebuddy-backend \
@@ -434,6 +510,7 @@ gcloud run deploy collegebuddy-backend \
 ```
 
 **Frontend:**
+
 ```bash
 cd apps/frontend
 npm run build
@@ -441,6 +518,7 @@ gsutil -m cp -r dist/* gs://your-bucket/
 ```
 
 **Database:**
+
 ```bash
 gcloud sql instances create collegebuddy-db \
   --database-version=POSTGRES_16 \
@@ -459,24 +537,28 @@ See `CB-features-updates.md` for comprehensive deployment guide.
 ## Troubleshooting
 
 ### Backend won't start
+
 - Check PostgreSQL is running: `docker compose ps`
 - Verify database credentials in `.env`
 - Check port 8081 is not in use: `lsof -i :8081`
 - Review logs: `mvn spring-boot:run`
 
 ### Frontend can't connect to backend
+
 - Verify `VITE_API_URL` in `.env`
 - Check backend is running on port 8081
 - Check browser console for CORS errors
 - Verify backend CORS configuration
 
 ### Database connection failed
+
 - Ensure PostgreSQL is running
 - Check credentials in `application.yml`
 - Verify database `collegebuddy` exists
 - Check Flyway migrations completed
 
 ### Email not sending
+
 - Verify `SENDGRID_API_KEY` is set
 - Check SendGrid account is active
 - Verify sender domain in SendGrid
@@ -504,6 +586,7 @@ This is a CS5800 coursework project. For development:
 ## Support
 
 For issues or questions:
+
 - Check existing documentation in `CB-features-updates.md`
 - Review API endpoints and configuration
 - Check logs for error messages
