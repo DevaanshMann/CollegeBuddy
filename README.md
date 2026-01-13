@@ -1,4 +1,4 @@
-# CollegeBuddy
+# CollegeBuddy - **https://collegebuddy.app
 
 A modern social networking platform designed for college students to connect, communicate, and build their campus community.
 
